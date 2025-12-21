@@ -22,8 +22,9 @@ class DiscordBot(commands.Bot):
             intents=intents,
             help_command=None,  # We'll use slash command for help
         )
-
-        self.guild_id = os.getenv("GUILD_ID")
+        # Get guild_id, only use if it's a valid numeric ID
+        guild_id_str = os.getenv("GUILD_ID", "")
+        self.guild_id = guild_id_str if guild_id_str.isdigit() else None
 
     async def setup_hook(self):
         """Load cogs and sync commands"""
