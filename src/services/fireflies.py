@@ -2,6 +2,7 @@
 Fireflies Scraper Service
 Scrape transcripts from Fireflies.ai shared links
 """
+
 import asyncio
 import logging
 import re
@@ -10,31 +11,37 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 
-async def scrape_fireflies(url: str, timeout: int = 60, retries: int = 3) -> Optional[list[dict]]:
+async def scrape_fireflies(
+    url: str, timeout: int = 60, retries: int = 3
+) -> Optional[list[dict]]:
     """
     Scrape transcript from Fireflies.ai shared link.
-    
+
     Args:
         url: Fireflies shared meeting URL
         timeout: Timeout in seconds
         retries: Number of retry attempts
-        
+
     Returns:
         List of dicts with 'name', 'time', 'content' or None if failed
     """
     from playwright.async_api import async_playwright
-    
+
     for attempt in range(retries):
         try:
             async with async_playwright() as p:
                 browser = await p.chromium.launch(headless=True)
                 page = await browser.new_page()
-                
-                logger.info(f"Scraping Fireflies (attempt {attempt + 1}): {url[:50]}...")
-                
-                await page.goto(url, wait_until="domcontentloaded", timeout=timeout * 1000)
+
+                logger.info(
+                    f"Scraping Fireflies (attempt {attempt + 1}): {url[:50]}..."
+                )
+
+                await page.goto(
+                    url, wait_until="domcontentloaded", timeout=timeout * 1000
+                )
                 await page.wait_for_timeout(5000)
-                
+
                 # Close login modal if present
                 try:
                     close_btn = page.locator("button.x, button.lciBA-d")
@@ -43,7 +50,7 @@ async def scrape_fireflies(url: str, timeout: int = 60, retries: int = 3) -> Opt
                         await page.wait_for_timeout(1000)
                 except Exception:
                     pass
-                
+
                 # Extract transcript from __NEXT_DATA__
                 transcript_data = await page.evaluate("""
                     () => {
@@ -67,29 +74,29 @@ async def scrape_fireflies(url: str, timeout: int = 60, retries: int = 3) -> Opt
                         return null;
                     }
                 """)
-                
+
                 await browser.close()
-                
+
                 if transcript_data:
                     # Clean trailing avatar initials
                     for entry in transcript_data:
-                        content = entry['content']
-                        content = re.sub(r'[.!?,]? [A-Za-z]$', '', content)
-                        entry['content'] = content.strip()
-                    
+                        content = entry["content"]
+                        content = re.sub(r"[.!?,]? [A-Za-z]$", "", content)
+                        entry["content"] = content.strip()
+
                     logger.info(f"Scraped {len(transcript_data)} entries")
                     return transcript_data
-                
+
                 logger.warning("No transcript found in page data")
                 return None
-                
+
         except Exception as e:
             logger.error(f"Scrape attempt {attempt + 1} failed: {e}")
             if attempt < retries - 1:
-                backoff = 2 ** attempt
+                backoff = 2**attempt
                 logger.info(f"Retrying in {backoff}s...")
                 await asyncio.sleep(backoff)
-    
+
     return None
 
 
