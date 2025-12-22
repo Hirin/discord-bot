@@ -19,7 +19,7 @@ def main():
 
     token = os.getenv("BOT_TOKEN")
     if not token:
-        print("❌ BOT_TOKEN not found in environment")
+        print("BOT_TOKEN not found in environment")
         sys.exit(1)
 
     bot = DiscordBot()

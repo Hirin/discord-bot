@@ -88,15 +88,15 @@ def mask_key(key: str) -> str:
 
 DEFAULT_PROMPT = """Bạn là trợ lý tóm tắt cuộc họp chuyên nghiệp. 
 Hãy tóm tắt cuộc họp theo cấu trúc:
-## 📋 Tóm tắt tổng quan
+## Tóm tắt tổng quan
 (2-3 câu về nội dung chính)
-## 🎯 Các điểm chính
+## Các điểm chính
 - Điểm 1
 - Điểm 2
 ...
-## ✅ Quyết định & Action Items
+## Quyết định & Action Items
 - [Người] - Việc cần làm
-## 📌 Ghi chú quan trọng
+## Ghi chú quan trọng
 (Nếu có)
 Hãy tóm tắt ngắn gọn, súc tích, bằng tiếng Việt."""
 

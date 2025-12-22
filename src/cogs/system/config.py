@@ -68,18 +68,12 @@ class ConfigView(discord.ui.View):
     @discord.ui.select(
         placeholder="Chọn action...",
         options=[
-            discord.SelectOption(label="Set GLM API Key", value="api_glm", emoji="🔑"),
-            discord.SelectOption(
-                label="Set Fireflies API Key", value="api_fireflies", emoji="🔥"
-            ),
-            discord.SelectOption(
-                label="Set Custom Prompt", value="prompt_set", emoji="📝"
-            ),
-            discord.SelectOption(label="View Prompt", value="prompt_view", emoji="👁️"),
-            discord.SelectOption(
-                label="Reset Prompt", value="prompt_reset", emoji="🔄"
-            ),
-            discord.SelectOption(label="View Config", value="info", emoji="ℹ️"),
+            discord.SelectOption(label="Set GLM API Key", value="api_glm"),
+            discord.SelectOption(label="Set Fireflies API Key", value="api_fireflies"),
+            discord.SelectOption(label="Set Custom Prompt", value="prompt_set"),
+            discord.SelectOption(label="View Prompt", value="prompt_view"),
+            discord.SelectOption(label="Reset Prompt", value="prompt_reset"),
+            discord.SelectOption(label="View Config", value="info"),
         ],
     )
     async def select_action(
@@ -135,7 +129,6 @@ class ConfigView(discord.ui.View):
 class Config(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self._active_messages: dict[int, discord.Message] = {}  # user_id -> message
 
     @app_commands.command(name="config", description="Server configuration")
     @app_commands.checks.has_permissions(administrator=True)
@@ -149,9 +142,9 @@ class Config(commands.Cog):
 
         # Delete previous dropdown for this user
         user_id = interaction.user.id
-        if user_id in self._active_messages:
+        if user_id in self.bot.active_dropdowns:
             try:
-                await self._active_messages[user_id].delete()
+                await self.bot.active_dropdowns[user_id].delete()
             except Exception:
                 pass
 
@@ -163,7 +156,7 @@ class Config(commands.Cog):
         )
 
         # Store this message
-        self._active_messages[user_id] = await interaction.original_response()
+        self.bot.active_dropdowns[user_id] = await interaction.original_response()
 
 
 async def setup(bot: commands.Bot):

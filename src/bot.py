@@ -26,6 +26,9 @@ class DiscordBot(commands.Bot):
         guild_id_str = os.getenv("GUILD_ID", "")
         self.guild_id = guild_id_str if guild_id_str.isdigit() else None
 
+        # Track active dropdown messages per user
+        self.active_dropdowns: dict[int, discord.Message] = {}
+
     async def setup_hook(self):
         """Load cogs and sync commands"""
         # Load cogs
@@ -67,8 +70,8 @@ class DiscordBot(commands.Bot):
         # Create health marker for Docker healthcheck
         Path("/tmp/healthy").touch()
 
-        logger.info(f"✅ Bot ready: {self.user} (ID: {self.user.id})")
-        logger.info(f"📊 Guilds: {len(self.guilds)}")
+        logger.info(f"Bot ready: {self.user} (ID: {self.user.id})")
+        logger.info(f"Guilds: {len(self.guilds)}")
 
     async def on_error(self, event, *args, **kwargs):
         """Global error handler"""

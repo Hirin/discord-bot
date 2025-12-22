@@ -79,10 +79,8 @@ class MeetingView(discord.ui.View):
     @discord.ui.select(
         placeholder="Chọn action...",
         options=[
-            discord.SelectOption(label="List Meetings", value="list", emoji="📋"),
-            discord.SelectOption(
-                label="Summarize Meeting", value="summary", emoji="📝"
-            ),
+            discord.SelectOption(label="List Meetings", value="list"),
+            discord.SelectOption(label="Summarize Meeting", value="summary"),
         ],
     )
     async def select_action(
@@ -123,7 +121,7 @@ class MeetingView(discord.ui.View):
                         date_str = "N/A"
 
                     embed.add_field(
-                        name=f"📝 {t['title'][:40]}",
+                        name=f"{t['title'][:40]}",
                         value=f"ID: `{t['id']}`\n{date_str} | {mins}min",
                         inline=False,
                     )
@@ -141,7 +139,6 @@ class MeetingView(discord.ui.View):
 class Meeting(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self._active_messages: dict[int, discord.Message] = {}
 
     @app_commands.command(name="meeting", description="Meeting tools")
     async def meeting(self, interaction: discord.Interaction):
@@ -154,20 +151,20 @@ class Meeting(commands.Cog):
 
         # Delete previous dropdown
         user_id = interaction.user.id
-        if user_id in self._active_messages:
+        if user_id in self.bot.active_dropdowns:
             try:
-                await self._active_messages[user_id].delete()
+                await self.bot.active_dropdowns[user_id].delete()
             except Exception:
                 pass
 
         view = MeetingView(interaction.guild_id)
         await interaction.response.send_message(
-            "📋 **Meeting** - Chọn action:",
+            "**📋 Meeting** - Chọn action:",
             view=view,
             delete_after=60,
         )
 
-        self._active_messages[user_id] = await interaction.original_response()
+        self.bot.active_dropdowns[user_id] = await interaction.original_response()
 
 
 async def setup(bot: commands.Bot):

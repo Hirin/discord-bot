@@ -57,6 +57,7 @@ async def summarize_transcript(
         else config_service.DEFAULT_PROMPT
     )
 
+    last_error = "Unknown error"
     for attempt in range(retries):
         try:
             logger.info(f"Summarizing transcript (attempt {attempt + 1})...")
@@ -83,15 +84,12 @@ async def summarize_transcript(
             return summary
 
         except Exception as e:
+            last_error = str(e)
             logger.error(f"LLM attempt {attempt + 1} failed: {e}")
             if attempt < retries - 1:
                 backoff = 2**attempt
                 logger.info(f"Retrying in {backoff}s...")
                 await asyncio.sleep(backoff)
 
-    return None
-
-
-def get_fallback_template() -> str:
-    """Return fallback template when LLM fails"""
-    return """⚠️ **Lỗi gọi API LLM**"""
+    # Return error message instead of None
+    return f"⚠️ LLM Error: {last_error[:200]}"
