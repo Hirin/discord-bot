@@ -74,6 +74,9 @@ class ConfigView(discord.ui.View):
             discord.SelectOption(label="View Prompt", value="prompt_view"),
             discord.SelectOption(label="Reset Prompt", value="prompt_reset"),
             discord.SelectOption(label="View Config", value="info"),
+            discord.SelectOption(
+                label="Set This Channel For Meetings", value="set_channel"
+            ),
         ],
     )
     async def select_action(
@@ -111,6 +114,7 @@ class ConfigView(discord.ui.View):
             glm = config.get("glm_api_key")
             ff = config.get("fireflies_api_key")
             has_prompt = bool(config.get("custom_prompt"))
+            channel_id = config.get("meetings_channel")
 
             embed = discord.Embed(title="⚙️ Server Config", color=discord.Color.blue())
             embed.add_field(
@@ -123,7 +127,35 @@ class ConfigView(discord.ui.View):
                 value="Custom ✅" if has_prompt else "Default",
                 inline=False,
             )
+            embed.add_field(
+                name="Meetings Channel",
+                value=f"<#{channel_id}>" if channel_id else "Not set",
+                inline=False,
+            )
             await interaction.response.send_message(embed=embed, ephemeral=True)
+
+        elif action == "set_channel":
+            # Set current channel as meetings channel
+            config_service.set_meetings_channel(self.guild_id, interaction.channel_id)
+            await interaction.response.send_message(
+                f"✅ Đã set kênh này làm Meetings Channel!\n"
+                f"Bot sẽ tự động gửi summary vào <#{interaction.channel_id}>",
+                ephemeral=True,
+            )
+
+    @discord.ui.button(label="🔄 Reload", style=discord.ButtonStyle.secondary, row=1)
+    async def reload_button(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        """Reload the dropdown view"""
+        await interaction.response.edit_message(view=ConfigView(self.guild_id))
+
+    @discord.ui.button(label="❌ Đóng", style=discord.ButtonStyle.danger, row=1)
+    async def close_button(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        """Delete the message"""
+        await interaction.message.delete()
 
 
 class Config(commands.Cog):

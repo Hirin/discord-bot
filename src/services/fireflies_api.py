@@ -153,3 +153,133 @@ async def get_transcript_by_id(
     except Exception as e:
         logger.error(f"Fireflies API request failed: {e}")
         return None
+
+
+async def add_to_live_meeting(
+    meeting_link: str,
+    guild_id: Optional[int] = None,
+    title: Optional[str] = None,
+    duration: int = 60,
+) -> tuple[bool, str]:
+    """
+    Add Fireflies bot to a live meeting.
+
+    Args:
+        meeting_link: Valid meeting URL (Zoom, Google Meet, etc.)
+        guild_id: Guild ID for API key lookup
+        title: Optional meeting title
+        duration: Meeting duration in minutes (15-120, default 60)
+
+    Returns:
+        Tuple of (success: bool, message: str)
+    """
+    api_key = get_api_key(guild_id)
+    if not api_key:
+        return False, "Chưa cấu hình Fireflies API key"
+
+    mutation = """
+    mutation AddToLiveMeeting($meeting_link: String!, $title: String, $duration: Int) {
+      addToLiveMeeting(meeting_link: $meeting_link, title: $title, duration: $duration) {
+        success
+        message
+      }
+    }
+    """
+
+    variables = {
+        "meeting_link": meeting_link,
+        "duration": min(max(duration, 15), 120),  # Clamp 15-120
+    }
+    if title:
+        variables["title"] = title[:256]
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                API_URL,
+                json={"query": mutation, "variables": variables},
+                headers=headers,
+                timeout=30,
+            )
+
+            data = response.json()
+
+            if "errors" in data:
+                error_msg = data["errors"][0].get("message", "Unknown error")
+                logger.error(f"Fireflies addToLiveMeeting error: {error_msg}")
+                return False, f"API Error: {error_msg}"
+
+            result = data.get("data", {}).get("addToLiveMeeting", {})
+            if result.get("success"):
+                logger.info(f"Bot added to meeting: {meeting_link}")
+                return True, result.get("message", "Bot đã được thêm vào meeting!")
+            else:
+                return False, result.get("message", "Không thể thêm bot vào meeting")
+
+    except Exception as e:
+        logger.error(f"Fireflies addToLiveMeeting failed: {e}")
+        return False, f"Error: {str(e)[:100]}"
+
+
+async def delete_transcript(
+    transcript_id: str, guild_id: Optional[int] = None
+) -> tuple[bool, str]:
+    """
+    Delete a transcript from Fireflies.
+
+    Args:
+        transcript_id: Fireflies transcript ID
+        guild_id: Guild ID for API key lookup
+
+    Returns:
+        Tuple of (success: bool, message: str)
+    """
+    api_key = get_api_key(guild_id)
+    if not api_key:
+        return False, "Chưa cấu hình Fireflies API key"
+
+    mutation = """
+    mutation DeleteTranscript($id: String!) {
+      deleteTranscript(id: $id) {
+        id
+        title
+      }
+    }
+    """
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                API_URL,
+                json={"query": mutation, "variables": {"id": transcript_id}},
+                headers=headers,
+                timeout=30,
+            )
+
+            data = response.json()
+
+            if "errors" in data:
+                error_msg = data["errors"][0].get("message", "Unknown error")
+                logger.error(f"Fireflies deleteTranscript error: {error_msg}")
+                return False, f"API Error: {error_msg}"
+
+            result = data.get("data", {}).get("deleteTranscript")
+            if result:
+                logger.info(f"Deleted transcript from Fireflies: {transcript_id}")
+                return True, "Đã xóa transcript từ Fireflies!"
+            else:
+                return False, "Không thể xóa transcript"
+
+    except Exception as e:
+        logger.error(f"Fireflies deleteTranscript failed: {e}")
+        return False, f"Error: {str(e)[:100]}"

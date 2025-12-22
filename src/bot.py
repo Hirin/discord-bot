@@ -54,16 +54,28 @@ class DiscordBot(commands.Bot):
             if not category_dir.exists():
                 continue
 
-            for cog_file in category_dir.glob("*.py"):
-                if cog_file.name.startswith("_"):
-                    continue
-
-                cog_path = f"cogs.{category}.{cog_file.stem}"
+            # Check if category has __init__.py with setup() - load as package
+            init_file = category_dir / "__init__.py"
+            if init_file.exists() and "async def setup" in init_file.read_text():
+                # Load the package itself (e.g., cogs.meeting)
+                cog_path = f"cogs.{category}"
                 try:
                     await self.load_extension(cog_path)
-                    logger.info(f"Loaded cog: {cog_path}")
+                    logger.info(f"Loaded cog package: {cog_path}")
                 except Exception as e:
                     logger.error(f"Failed to load {cog_path}: {e}")
+            else:
+                # Fallback: load individual .py files
+                for cog_file in category_dir.glob("*.py"):
+                    if cog_file.name.startswith("_"):
+                        continue
+
+                    cog_path = f"cogs.{category}.{cog_file.stem}"
+                    try:
+                        await self.load_extension(cog_path)
+                        logger.info(f"Loaded cog: {cog_path}")
+                    except Exception as e:
+                        logger.error(f"Failed to load {cog_path}: {e}")
 
     async def on_ready(self):
         """Bot is ready"""

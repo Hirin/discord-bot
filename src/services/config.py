@@ -88,15 +88,15 @@ def mask_key(key: str) -> str:
 
 DEFAULT_PROMPT = """Bạn là trợ lý tóm tắt cuộc họp chuyên nghiệp. 
 Hãy tóm tắt cuộc họp theo cấu trúc:
-## Tóm tắt tổng quan
+## 📋 Tóm tắt tổng quan
 (2-3 câu về nội dung chính)
-## Các điểm chính
+## 🎯 Các điểm chính
 - Điểm 1
 - Điểm 2
 ...
-## Quyết định & Action Items
+## ✅ Quyết định & Action Items
 - [Người] - Việc cần làm
-## Ghi chú quan trọng
+## 📝 Ghi chú quan trọng
 (Nếu có)
 Hãy tóm tắt ngắn gọn, súc tích, bằng tiếng Việt."""
 
@@ -105,3 +105,15 @@ def get_custom_prompt(guild_id: int) -> str:
     """Get custom prompt for a guild, fallback to default"""
     config = get_guild_config(guild_id)
     return config.get("custom_prompt") or DEFAULT_PROMPT
+
+
+def get_meetings_channel(guild_id: int) -> Optional[int]:
+    """Get meetings channel ID for a guild"""
+    config = get_guild_config(guild_id)
+    channel_id = config.get("meetings_channel")
+    return int(channel_id) if channel_id else None
+
+
+def set_meetings_channel(guild_id: int, channel_id: int):
+    """Set meetings channel for a guild"""
+    set_guild_config(guild_id, "meetings_channel", str(channel_id))

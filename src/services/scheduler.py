@@ -1,0 +1,335 @@
+"""
+Meeting Scheduler Service
+- Schedule Fireflies bot to join meetings
+- Auto-poll for transcripts after Join and send summary to channel
+"""
+
+import asyncio
+import json
+import logging
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Optional
+
+logger = logging.getLogger(__name__)
+
+# Store scheduled meetings and pending polls in JSON
+SCHEDULE_FILE = Path(__file__).parent.parent.parent / "data" / "scheduled_meetings.json"
+POLLS_FILE = Path(__file__).parent.parent.parent / "data" / "pending_polls.json"
+
+
+def _ensure_file(file_path: Path):
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    if not file_path.exists():
+        file_path.write_text("[]")
+
+
+# === Scheduled Meetings ===
+
+
+def load_scheduled() -> list[dict]:
+    """Load scheduled meetings from file"""
+    _ensure_file(SCHEDULE_FILE)
+    try:
+        return json.loads(SCHEDULE_FILE.read_text())
+    except Exception:
+        return []
+
+
+def save_scheduled(meetings: list[dict]):
+    """Save scheduled meetings to file"""
+    _ensure_file(SCHEDULE_FILE)
+    SCHEDULE_FILE.write_text(json.dumps(meetings, indent=2, default=str))
+
+
+def add_scheduled(
+    meeting_link: str,
+    scheduled_time: datetime,
+    guild_id: int,
+    title: Optional[str] = None,
+) -> dict:
+    """Add a meeting to schedule"""
+    meetings = load_scheduled()
+
+    entry = {
+        "id": f"{guild_id}_{int(scheduled_time.timestamp())}",
+        "meeting_link": meeting_link,
+        "scheduled_time": scheduled_time.isoformat(),
+        "guild_id": guild_id,
+        "title": title,
+        "status": "pending",
+    }
+
+    meetings.append(entry)
+    save_scheduled(meetings)
+    logger.info(f"Scheduled meeting: {entry['id']} at {scheduled_time}")
+    return entry
+
+
+def get_pending() -> list[dict]:
+    """Get pending scheduled meetings"""
+    meetings = load_scheduled()
+    now = datetime.now()
+
+    pending = []
+    for m in meetings:
+        if m.get("status") == "pending":
+            scheduled = datetime.fromisoformat(m["scheduled_time"])
+            if scheduled <= now:
+                pending.append(m)
+
+    return pending
+
+
+def mark_completed(meeting_id: str, status: str = "completed"):
+    """Mark a scheduled meeting as completed or failed"""
+    meetings = load_scheduled()
+    for m in meetings:
+        if m.get("id") == meeting_id:
+            m["status"] = status
+            break
+    save_scheduled(meetings)
+
+
+def get_scheduled_for_guild(guild_id: int) -> list[dict]:
+    """Get pending meetings for a specific guild"""
+    meetings = load_scheduled()
+    return [
+        m
+        for m in meetings
+        if m.get("guild_id") == guild_id and m.get("status") == "pending"
+    ]
+
+
+def remove_scheduled(meeting_id: str) -> bool:
+    """Remove a scheduled meeting"""
+    meetings = load_scheduled()
+    new_meetings = [m for m in meetings if m.get("id") != meeting_id]
+    if len(new_meetings) < len(meetings):
+        save_scheduled(new_meetings)
+        return True
+    return False
+
+
+# === Pending Polls (for auto-summary after Join) ===
+
+
+def load_polls() -> list[dict]:
+    """Load pending polls from file"""
+    _ensure_file(POLLS_FILE)
+    try:
+        return json.loads(POLLS_FILE.read_text())
+    except Exception:
+        return []
+
+
+def save_polls(polls: list[dict]):
+    """Save pending polls to file"""
+    _ensure_file(POLLS_FILE)
+    POLLS_FILE.write_text(json.dumps(polls, indent=2, default=str))
+
+
+def add_poll(
+    guild_id: int,
+    poll_after: datetime,
+    title: Optional[str] = None,
+    duration_min: int = 120,
+) -> dict:
+    """
+    Add a poll entry to check for new transcripts.
+
+    Args:
+        guild_id: Discord guild ID
+        poll_after: When to start polling (e.g., meeting end time + 20 min)
+        title: Optional meeting title to match
+        duration_min: Expected meeting duration for reference
+    """
+    polls = load_polls()
+
+    entry = {
+        "id": f"poll_{guild_id}_{int(datetime.now().timestamp())}",
+        "guild_id": guild_id,
+        "poll_after": poll_after.isoformat(),
+        "title": title,
+        "created_at": datetime.now().isoformat(),
+        "attempts": 0,
+        "max_attempts": 6,  # Poll up to 6 times (1 hour window)
+        "status": "pending",
+    }
+
+    polls.append(entry)
+    save_polls(polls)
+    logger.info(f"Added poll: {entry['id']} starts at {poll_after}")
+    return entry
+
+
+def get_pending_polls() -> list[dict]:
+    """Get polls that are ready to execute"""
+    polls = load_polls()
+    now = datetime.now()
+
+    pending = []
+    for p in polls:
+        if p.get("status") == "pending":
+            poll_after = datetime.fromisoformat(p["poll_after"])
+            if poll_after <= now:
+                pending.append(p)
+
+    return pending
+
+
+def update_poll(poll_id: str, attempts: int = None, status: str = None):
+    """Update a poll entry"""
+    polls = load_polls()
+    for p in polls:
+        if p.get("id") == poll_id:
+            if attempts is not None:
+                p["attempts"] = attempts
+            if status is not None:
+                p["status"] = status
+            break
+    save_polls(polls)
+
+
+# === Main Scheduler Loop ===
+
+
+async def run_scheduler(bot):
+    """Background task to:
+    1. Execute scheduled meetings (Join Now at scheduled time)
+    2. Poll for new transcripts after Join
+    3. Daily cleanup of old transcripts
+    """
+    from services import config, fireflies, fireflies_api, llm, transcript_storage
+
+    last_cleanup = datetime.now()
+    last_poll_check = datetime.now()
+
+    while True:
+        try:
+            # === 1. Execute pending scheduled meetings ===
+            pending_meetings = get_pending()
+            for meeting in pending_meetings:
+                logger.info(f"Executing scheduled meeting: {meeting['id']}")
+
+                success, msg = await fireflies_api.add_to_live_meeting(
+                    meeting_link=meeting["meeting_link"],
+                    guild_id=meeting.get("guild_id"),
+                    title=meeting.get("title"),
+                )
+
+                if success:
+                    # Schedule a poll for 2h20m later
+                    poll_time = datetime.now() + timedelta(hours=2, minutes=20)
+                    add_poll(
+                        guild_id=meeting.get("guild_id"),
+                        poll_after=poll_time,
+                        title=meeting.get("title"),
+                    )
+
+                mark_completed(
+                    meeting["id"], status="completed" if success else "failed"
+                )
+
+            # === 2. Poll for new transcripts (every 10 min) ===
+            now = datetime.now()
+            if (now - last_poll_check).total_seconds() >= 600:  # 10 minutes
+                last_poll_check = now
+
+                pending_polls = get_pending_polls()
+                for poll in pending_polls:
+                    guild_id = poll.get("guild_id")
+                    poll_id = poll.get("id")
+                    attempts = poll.get("attempts", 0)
+                    max_attempts = poll.get("max_attempts", 6)
+
+                    logger.info(
+                        f"Polling for transcript: {poll_id} (attempt {attempts + 1})"
+                    )
+
+                    # Get recent transcripts from Fireflies
+                    transcripts = await fireflies_api.list_transcripts(
+                        guild_id=guild_id, limit=3
+                    )
+
+                    # Check if any new transcript matches
+                    found_new = False
+                    for t in transcripts or []:
+                        t_id = t.get("id")
+                        # Check if already saved locally
+                        local = transcript_storage.list_transcripts(guild_id, limit=50)
+                        already_saved = any(
+                            x.get("fireflies_id") == t_id
+                            or t_id in str(x.get("local_id", ""))
+                            for x in local
+                        )
+
+                        if not already_saved:
+                            found_new = True
+                            logger.info(f"Found new transcript: {t_id}")
+
+                            # Get full transcript
+                            transcript_data = await fireflies_api.get_transcript_by_id(
+                                t_id, guild_id=guild_id
+                            )
+
+                            if transcript_data:
+                                # Summarize
+                                transcript_text = fireflies.format_transcript(
+                                    transcript_data
+                                )
+                                summary = await llm.summarize_transcript(
+                                    transcript_text, guild_id=guild_id
+                                )
+
+                                # Save locally
+                                title = t.get("title", "Auto-polled Meeting")
+                                entry = transcript_storage.save_transcript(
+                                    guild_id=guild_id,
+                                    fireflies_id=t_id,
+                                    title=title,
+                                    transcript_data=transcript_data,
+                                )
+
+                                # Delete from Fireflies
+                                await fireflies_api.delete_transcript(t_id, guild_id)
+
+                                # Send to Discord channel
+                                channel_id = config.get_meetings_channel(guild_id)
+                                if channel_id and bot:
+                                    channel = bot.get_channel(channel_id)
+                                    if channel:
+                                        msg = (
+                                            f"📋 **{title}** (ID: `{entry['local_id']}`)\n\n"
+                                            f"{summary or 'No summary'}"
+                                        )
+                                        # Split if too long
+                                        if len(msg) <= 2000:
+                                            await channel.send(msg)
+                                        else:
+                                            await channel.send(msg[:2000])
+
+                            break  # Process one transcript per poll cycle
+
+                    if found_new:
+                        update_poll(poll_id, status="completed")
+                    else:
+                        # Increment attempts
+                        new_attempts = attempts + 1
+                        if new_attempts >= max_attempts:
+                            update_poll(
+                                poll_id, attempts=new_attempts, status="exhausted"
+                            )
+                            logger.info(f"Poll exhausted: {poll_id}")
+                        else:
+                            update_poll(poll_id, attempts=new_attempts)
+
+            # === 3. Daily cleanup of old transcripts (2 months) ===
+            if (now - last_cleanup).days >= 1:
+                transcript_storage.cleanup_old_transcripts(max_age_days=60)
+                last_cleanup = now
+
+        except Exception as e:
+            logger.error(f"Scheduler error: {e}")
+
+        await asyncio.sleep(30)  # Check every 30 seconds
