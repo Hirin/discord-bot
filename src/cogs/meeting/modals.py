@@ -51,20 +51,22 @@ class MeetingIdModal(discord.ui.Modal, title="Meeting Summary"):
                         transcript_text, guild_id=self.guild_id
                     )
                     header = f"📋 **{title}** (ID: `{id_or_url}`)\n"
-                    await send_chunked(interaction, header + (summary or "⚠️ LLM error"))
+                    await send_chunked(interaction, header + summary)
                     return
 
             # Otherwise, treat as Fireflies ID or URL
             fireflies_id = None
             is_url = id_or_url.startswith("http")
+            # Whitelist IDs that should NOT be auto-deleted (for testing)
+            whitelist_ids = {"01K94BJAWM5JMFREPDXKJY16GB"}
 
             if is_url:
                 if "fireflies.ai" not in id_or_url:
                     await interaction.followup.send("❌ Link không hợp lệ")
                     return
+                # Scrape share link - don't auto delete (could be someone else's)
                 transcript_data = await fireflies.scrape_fireflies(id_or_url)
-                if "/view/" in id_or_url:
-                    fireflies_id = id_or_url.split("/view/")[-1].split("?")[0]
+                # Don't extract fireflies_id from URL - no auto delete for share links
             else:
                 fireflies_id = id_or_url
                 transcript_data = await fireflies_api.get_transcript_by_id(
@@ -81,8 +83,6 @@ class MeetingIdModal(discord.ui.Modal, title="Meeting Summary"):
                 transcript_text, guild_id=self.guild_id
             )
 
-            if not summary:
-                summary = "⚠️ LLM error"
 
             # Auto save locally
             title = (
@@ -96,8 +96,8 @@ class MeetingIdModal(discord.ui.Modal, title="Meeting Summary"):
                 transcript_data=transcript_data,
             )
 
-            # Auto delete from Fireflies if we have ID
-            if fireflies_id:
+            # Auto delete from Fireflies if we have ID (not from URL, not whitelisted)
+            if fireflies_id and fireflies_id not in whitelist_ids:
                 await fireflies_api.delete_transcript(fireflies_id, self.guild_id)
 
             # Send summary + status
