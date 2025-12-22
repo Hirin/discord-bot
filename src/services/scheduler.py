@@ -47,6 +47,7 @@ def add_scheduled(
     scheduled_time: datetime,
     guild_id: int,
     title: Optional[str] = None,
+    glossary_text: Optional[str] = None,
 ) -> dict:
     """Add a meeting to schedule"""
     meetings = load_scheduled()
@@ -58,6 +59,7 @@ def add_scheduled(
         "guild_id": guild_id,
         "title": title,
         "status": "pending",
+        "glossary_text": glossary_text,  # Optional document glossary
     }
 
     meetings.append(entry)
@@ -134,6 +136,7 @@ def add_poll(
     poll_after: datetime,
     title: Optional[str] = None,
     duration_min: int = 120,
+    glossary_text: Optional[str] = None,
 ) -> dict:
     """
     Add a poll entry to check for new transcripts.
@@ -143,6 +146,7 @@ def add_poll(
         poll_after: When to start polling (e.g., meeting end time + 20 min)
         title: Optional meeting title to match
         duration_min: Expected meeting duration for reference
+        glossary_text: Optional glossary from uploaded document
     """
     polls = load_polls()
 
@@ -155,6 +159,7 @@ def add_poll(
         "attempts": 0,
         "max_attempts": 6,  # Poll up to 6 times (1 hour window)
         "status": "pending",
+        "glossary_text": glossary_text,  # Optional document glossary
     }
 
     polls.append(entry)
@@ -191,6 +196,17 @@ def update_poll(poll_id: str, attempts: int = None, status: str = None):
     save_polls(polls)
 
 
+def _clear_poll_glossary(poll_id: str):
+    """Clear glossary_text from poll to save memory after use"""
+    polls = load_polls()
+    for p in polls:
+        if p.get("id") == poll_id and "glossary_text" in p:
+            p["glossary_text"] = None
+            break
+    save_polls(polls)
+
+
+
 # === Main Scheduler Loop ===
 
 
@@ -219,12 +235,13 @@ async def run_scheduler(bot):
                 )
 
                 if success:
-                    # Schedule a poll for 2h20m later
+                    # Schedule a poll for 2h20m later, pass glossary if any
                     poll_time = datetime.now() + timedelta(hours=2, minutes=20)
                     add_poll(
                         guild_id=meeting.get("guild_id"),
                         poll_after=poll_time,
                         title=meeting.get("title"),
+                        glossary_text=meeting.get("glossary_text"),  # Pass glossary
                     )
 
                 mark_completed(
@@ -274,12 +291,15 @@ async def run_scheduler(bot):
                             )
 
                             if transcript_data:
-                                # Summarize
+                                # Get glossary from poll if available
+                                glossary = poll.get("glossary_text")
+                                
+                                # Summarize with glossary context
                                 transcript_text = fireflies.format_transcript(
                                     transcript_data
                                 )
                                 summary = await llm.summarize_transcript(
-                                    transcript_text, guild_id=guild_id
+                                    transcript_text, guild_id=guild_id, glossary=glossary
                                 )
 
                                 # Save locally
@@ -299,8 +319,9 @@ async def run_scheduler(bot):
                                 if channel_id and bot:
                                     channel = bot.get_channel(channel_id)
                                     if channel:
+                                        doc_status = " 📎" if glossary else ""
                                         msg = (
-                                            f"📋 **{title}** (ID: `{entry['local_id']}`)\n\n"
+                                            f"📋 **{title}**{doc_status} (ID: `{entry['local_id']}`)\n\n"
                                             f"{summary or 'No summary'}"
                                         )
                                         # Split if too long
@@ -313,6 +334,8 @@ async def run_scheduler(bot):
 
                     if found_new:
                         update_poll(poll_id, status="completed")
+                        # Clear glossary after use to save memory
+                        _clear_poll_glossary(poll_id)
                     else:
                         # Increment attempts
                         new_attempts = attempts + 1

@@ -44,11 +44,17 @@ class MeetingIdModal(discord.ui.Modal, title="Meeting Summary"):
                 local_entry = transcript_storage.get_transcript(id_or_url)
                 if local_entry:
                     title = local_entry.get("title", "Meeting")
-                    # Always call LLM to regenerate summary
                     transcript_data = local_entry.get("transcript", [])
                     transcript_text = fireflies.format_transcript(transcript_data)
+                    
+                    # Prompt for optional document
+                    from .document_views import prompt_for_document
+                    glossary = await prompt_for_document(
+                        interaction, interaction.client, self.guild_id
+                    )
+                    
                     summary = await llm.summarize_transcript(
-                        transcript_text, guild_id=self.guild_id
+                        transcript_text, guild_id=self.guild_id, glossary=glossary
                     )
                     header = f"📋 **{title}** (ID: `{id_or_url}`)\n"
                     await send_chunked(interaction, header + summary)
@@ -77,12 +83,17 @@ class MeetingIdModal(discord.ui.Modal, title="Meeting Summary"):
                 await interaction.followup.send("❌ Không tìm thấy transcript")
                 return
 
-            # Generate summary
-            transcript_text = fireflies.format_transcript(transcript_data)
-            summary = await llm.summarize_transcript(
-                transcript_text, guild_id=self.guild_id
+            # Prompt for optional document
+            from .document_views import prompt_for_document
+            glossary = await prompt_for_document(
+                interaction, interaction.client, self.guild_id
             )
 
+            # Generate summary with glossary context
+            transcript_text = fireflies.format_transcript(transcript_data)
+            summary = await llm.summarize_transcript(
+                transcript_text, guild_id=self.guild_id, glossary=glossary
+            )
 
             # Auto save locally
             title = (
@@ -131,14 +142,33 @@ class JoinMeetingModal(discord.ui.Modal, title="Join Meeting Now"):
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(thinking=True)
 
+        # Prompt for optional document first
+        from .document_views import prompt_for_document
+        glossary = await prompt_for_document(
+            interaction, interaction.client, self.guild_id
+        )
+
+        # Join meeting
         success, msg = await fireflies_api.add_to_live_meeting(
             meeting_link=self.meeting_link.value,
             guild_id=self.guild_id,
             title=self.meeting_title.value or None,
         )
 
+        if success and glossary:
+            # Create poll to fetch transcript later with glossary context
+            from datetime import datetime, timedelta
+            poll_time = datetime.now() + timedelta(hours=2, minutes=20)
+            scheduler.add_poll(
+                guild_id=self.guild_id,
+                poll_after=poll_time,
+                title=self.meeting_title.value,
+                glossary_text=glossary,
+            )
+
         emoji = "✅" if success else "❌"
-        await interaction.followup.send(f"{emoji} {msg}")
+        doc_status = " (có tài liệu)" if glossary else ""
+        await interaction.followup.send(f"{emoji} {msg}{doc_status}")
 
 
 class ScheduleMeetingModal(discord.ui.Modal, title="Schedule Meeting"):
@@ -166,6 +196,8 @@ class ScheduleMeetingModal(discord.ui.Modal, title="Schedule Meeting"):
         self.guild_id = guild_id
 
     async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer(thinking=True)
+
         time_str = self.time_input.value.strip()
         now = datetime.now()
 
@@ -195,22 +227,30 @@ class ScheduleMeetingModal(discord.ui.Modal, title="Schedule Meeting"):
                     scheduled_time += timedelta(days=1)
 
         except Exception:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "❌ Format thời gian không hợp lệ. Dùng HH:MM hoặc +30m",
                 ephemeral=True,
             )
             return
 
-        # Schedule the meeting
+        # Prompt for optional document
+        from .document_views import prompt_for_document
+        glossary = await prompt_for_document(
+            interaction, interaction.client, self.guild_id
+        )
+
+        # Schedule the meeting with optional glossary
         entry = scheduler.add_scheduled(
             meeting_link=self.meeting_link.value,
             scheduled_time=scheduled_time,
             guild_id=self.guild_id,
             title=self.meeting_title.value or None,
+            glossary_text=glossary,  # Store for later use
         )
 
-        await interaction.response.send_message(
-            f"✅ Đã lên lịch!\n"
+        doc_status = "\n📎 Có tài liệu đính kèm" if glossary else ""
+        await interaction.followup.send(
+            f"✅ Đã lên lịch!{doc_status}\n"
             f"**ID:** `{entry['id']}`\n"
             f"**Time:** {scheduled_time.strftime('%Y-%m-%d %H:%M')}\n"
             f"**Link:** {self.meeting_link.value[:50]}...\n"

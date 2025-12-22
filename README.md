@@ -6,6 +6,7 @@ Meeting summary bot với Fireflies.ai + GLM (Z.AI).
 
 - 🎙️ **Join Meeting** - Bot tham gia và record Google Meet/Zoom
 - 📝 **Summarize** - Tóm tắt meeting bằng LLM (tiếng Việt)
+- 📎 **Document Upload** - Upload PDF tài liệu để trích xuất glossary, summary chi tiết hơn
 - 📅 **Schedule** - Lên lịch join meeting tự động
 - 💾 **Local Storage** - Lưu transcript local, auto xóa khỏi Fireflies
 
