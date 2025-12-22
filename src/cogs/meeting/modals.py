@@ -142,20 +142,26 @@ class JoinMeetingModal(discord.ui.Modal, title="Join Meeting Now"):
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(thinking=True)
 
-        # Prompt for optional document first
-        from .document_views import prompt_for_document
-        glossary = await prompt_for_document(
-            interaction, interaction.client, self.guild_id
-        )
-
-        # Join meeting
+        # Join meeting first (will take time to record anyway)
         success, msg = await fireflies_api.add_to_live_meeting(
             meeting_link=self.meeting_link.value,
             guild_id=self.guild_id,
             title=self.meeting_title.value or None,
         )
 
-        if success and glossary:
+        if not success:
+            await interaction.followup.send(f"❌ {msg}")
+            return
+
+        await interaction.followup.send(f"✅ {msg}")
+
+        # Now ask for optional document (while bot is joining/recording)
+        from .document_views import prompt_for_document
+        glossary = await prompt_for_document(
+            interaction, interaction.client, self.guild_id
+        )
+
+        if glossary:
             # Create poll to fetch transcript later with glossary context
             from datetime import datetime, timedelta
             poll_time = datetime.now() + timedelta(hours=2, minutes=20)
@@ -165,10 +171,7 @@ class JoinMeetingModal(discord.ui.Modal, title="Join Meeting Now"):
                 title=self.meeting_title.value,
                 glossary_text=glossary,
             )
-
-        emoji = "✅" if success else "❌"
-        doc_status = " (có tài liệu)" if glossary else ""
-        await interaction.followup.send(f"{emoji} {msg}{doc_status}")
+            await interaction.followup.send("📎 Đã lưu tài liệu cho summary sau", ephemeral=True)
 
 
 class ScheduleMeetingModal(discord.ui.Modal, title="Schedule Meeting"):

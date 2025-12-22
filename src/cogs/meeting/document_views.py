@@ -123,7 +123,6 @@ async def prompt_for_document(
             await interaction.followup.send(
                 f"✅ Đã trích xuất glossary ({len(glossary)} chars)",
                 ephemeral=True,
-                delete_after=10,
             )
 
         return glossary
@@ -132,7 +131,6 @@ async def prompt_for_document(
         await interaction.followup.send(
             "⏰ Timeout - tiếp tục không có tài liệu",
             ephemeral=True,
-            delete_after=5,
         )
         return None
     except Exception as e:
