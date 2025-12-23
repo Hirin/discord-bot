@@ -3,6 +3,7 @@ Meeting Modals - UI modals for meeting actions
 """
 
 import logging
+import re
 from datetime import datetime, timedelta
 
 import discord
@@ -33,87 +34,156 @@ class MeetingIdModal(discord.ui.Modal, title="Meeting Summary"):
         self.guild_id = guild_id
 
     async def on_submit(self, interaction: discord.Interaction):
-        await interaction.response.defer(thinking=True)
+        # Defer immediately to show we're working
+        await interaction.response.defer(ephemeral=True)
 
         id_or_url = self.id_or_url.value.strip()
 
         try:
-            # Check if it's a local ID first (format: guildid_hhmmssddmmyyyy)
-            if "_" in id_or_url and not id_or_url.startswith("http"):
-                # Try to get from local storage
-                local_entry = transcript_storage.get_transcript(id_or_url)
-                if local_entry:
-                    title = local_entry.get("title", "Meeting")
-                    transcript_data = local_entry.get("transcript", [])
-                    transcript_text = fireflies.format_transcript(transcript_data)
-                    
-                    # Prompt for optional document
-                    from .document_views import prompt_for_document
-                    glossary = await prompt_for_document(
-                        interaction, interaction.client, self.guild_id
-                    )
-                    
-                    summary = await llm.summarize_transcript(
-                        transcript_text, guild_id=self.guild_id, glossary=glossary
-                    )
-                    header = f"📋 **{title}** (ID: `{id_or_url}`)\n"
-                    await send_chunked(interaction, header + summary)
-                    return
-
-            # Otherwise, treat as Fireflies ID or URL
-            fireflies_id = None
             is_url = id_or_url.startswith("http")
-            # Whitelist IDs that should NOT be auto-deleted (for testing)
-            whitelist_ids = {"01K94BJAWM5JMFREPDXKJY16GB"}
-
-            if is_url:
-                if "fireflies.ai" not in id_or_url:
-                    await interaction.followup.send("❌ Link không hợp lệ")
-                    return
-                # Scrape share link - don't auto delete (could be someone else's)
-                transcript_data = await fireflies.scrape_fireflies(id_or_url)
-                # Don't extract fireflies_id from URL - no auto delete for share links
-            else:
-                fireflies_id = id_or_url
-                transcript_data = await fireflies_api.get_transcript_by_id(
-                    id_or_url, guild_id=self.guild_id
-                )
-
-            if not transcript_data:
-                await interaction.followup.send("❌ Không tìm thấy transcript")
-                return
-
-            # Prompt for optional document
+            fireflies_id = None
+            original_url = None  # Store link URL for footer
+            transcript_data = None
+            scraped_title = None
+            from_backup = False
+            
+            # Prompt for optional document FIRST (instant feedback)
             from .document_views import prompt_for_document
             glossary = await prompt_for_document(
                 interaction, interaction.client, self.guild_id
             )
+            
+            # Show processing message (will be deleted when done)
+            processing_msg = await interaction.followup.send(
+                "⏳ **Đang xử lý...**\n"
+                "Quá trình có thể mất **2-3 phút**, xin vui lòng chờ.",
+                ephemeral=True
+            )
+
+            if is_url:
+                # URL: scrape Fireflies share link
+                if "fireflies.ai" not in id_or_url:
+                    try:
+                        await processing_msg.delete()
+                    except Exception:
+                        pass
+                    await interaction.followup.send("❌ Link không hợp lệ")
+                    return
+                # Scrape share link - keep original URL for footer
+                original_url = id_or_url
+                result = await fireflies.scrape_fireflies(id_or_url)
+                if result:
+                    scraped_title, transcript_data = result
+            else:
+                # ID: Try Fireflies API FIRST, then fallback to local backup
+                fireflies_id = id_or_url
+                
+                # 1. Try Fireflies API first
+                transcript_data = await fireflies_api.get_transcript_by_id(
+                    id_or_url, guild_id=self.guild_id
+                )
+                
+                # 2. If API doesn't have it, fallback to local backup
+                if not transcript_data:
+                    local_entry = transcript_storage.get_transcript(self.guild_id, id_or_url)
+                    
+                    # Try restore from archive if not in local
+                    if not local_entry:
+                        local_entry = await transcript_storage.restore_from_archive(
+                            interaction.client, self.guild_id, id_or_url
+                        )
+                    
+                    if local_entry:
+                        from_backup = True
+                        scraped_title = local_entry.get("title", "Meeting")
+                        transcript_data = local_entry.get("transcript", [])
+
+            if not transcript_data:
+                try:
+                    await processing_msg.delete()
+                except Exception:
+                    pass
+                await interaction.followup.send(
+                    f"❌ Không tìm thấy transcript `{id_or_url}` (API và backup đều không có)"
+                )
+                return
 
             # Generate summary with glossary context
-            transcript_text = fireflies.format_transcript(transcript_data)
+            # Use seconds format for LLM
+            transcript_text = fireflies.format_transcript_for_llm(transcript_data)
             summary = await llm.summarize_transcript(
                 transcript_text, guild_id=self.guild_id, glossary=glossary
             )
+            
+            # Delete processing message
+            try:
+                await processing_msg.delete()
+            except Exception:
+                pass
 
-            # Auto save locally
+            # Auto save locally - use user title, scraped title, or fallback
             title = (
                 self.meeting_title.value
+                or scraped_title
                 or f"Meeting {fireflies_id[:10] if fireflies_id else 'scraped'}"
             )
-            entry = transcript_storage.save_transcript(
-                guild_id=self.guild_id,
-                fireflies_id=fireflies_id or "scraped",
-                title=title,
-                transcript_data=transcript_data,
-            )
+            
+            # Use Fireflies ID or generate unique ID for scraped
+            # Check if ID is in the URL (format: ...::ID or ...::ID?t=...)
+            url_id_match = re.search(r"::([A-Za-z0-9]+)(?:\?|$)", original_url or "")
+            if url_id_match:
+                transcript_id = url_id_match.group(1)
+                logger.info(f"Extracted ID from URL: {transcript_id}")
+            else:
+                transcript_id = fireflies_id or f"scraped_{int(datetime.now().timestamp())}"
+            
+            # Only save if not from backup (already saved)
+            if not from_backup:
+                entry, is_new = transcript_storage.save_transcript(
+                    guild_id=self.guild_id,
+                    fireflies_id=transcript_id,
+                    title=title,
+                    transcript_data=transcript_data,
+                )
 
-            # Auto delete from Fireflies if we have ID (not from URL, not whitelisted)
-            if fireflies_id and fireflies_id not in whitelist_ids:
-                await fireflies_api.delete_transcript(fireflies_id, self.guild_id)
+                # Only upload to archive if new (not duplicate)
+                if is_new:
+                    await transcript_storage.upload_to_discord(
+                        interaction.client, self.guild_id, entry
+                    )
+                entry_id = entry.get('id') or transcript_id
+            else:
+                entry_id = transcript_id
 
-            # Send summary + status
-            header = f"📋 **{title}** (ID: `{entry['local_id']}`)\n"
-            await send_chunked(interaction, header + summary)
+            # Build summary with Fireflies link if available
+            source_tag = " (từ backup)" if from_backup else ""
+            header = f"📋 **{title}**{source_tag} (ID: `{entry_id}`)\n"
+            
+            # Add Fireflies link based on source
+            footer = ""
+            ff_link_for_processing = ""
+            
+            if original_url:
+                # Shared link - use original URL
+                footer = f"\n\n🔗 [Xem recording]({original_url})"
+                ff_link_for_processing = original_url
+            elif fireflies_id:
+                # Fireflies ID - generate link
+                ff_link = fireflies_api.generate_fireflies_link(title, fireflies_id)
+                footer = f"\n\n🔗 [Xem recording]({ff_link})"
+                ff_link_for_processing = ff_link
+                
+            # Process summary timestamps: [-123s-] -> [MM:SS](link)
+            if summary and ff_link_for_processing:
+                summary = fireflies.process_summary_timestamps(summary, ff_link_for_processing)
+            
+            # Send summary to channel (not reply) to avoid deletion issues
+            # We already acknowledged via defer(), and maybe sent ephemeral updates.
+            # Use send_chunked with interaction.channel
+            await send_chunked(interaction.channel, header + summary + footer)
+            
+            # Notify user ephemerally that it's done
+            await interaction.followup.send("✅ Summary sent to channel!", ephemeral=True)
 
         except Exception as e:
             logger.exception("Error in meeting summary")
@@ -140,9 +210,27 @@ class JoinMeetingModal(discord.ui.Modal, title="Join Meeting Now"):
         self.guild_id = guild_id
 
     async def on_submit(self, interaction: discord.Interaction):
-        await interaction.response.defer(thinking=True)
+        await interaction.response.defer(ephemeral=True)
 
-        # Join meeting first (will take time to record anyway)
+        # Queue-based deletion: delete oldest if at capacity
+        from services import config as config_service
+        max_records = config_service.get_fireflies_max_records(self.guild_id)
+        current_count = await fireflies_api.get_transcript_count(self.guild_id)
+        
+        if current_count >= max_records:
+            # Get whitelist and find oldest non-whitelisted transcript
+            whitelist = config_service.get_whitelist_transcripts(self.guild_id)
+            transcripts = await fireflies_api.list_transcripts(self.guild_id, limit=50)
+            
+            if transcripts:
+                # Sort by date (oldest first), skip whitelisted
+                for t in sorted(transcripts, key=lambda x: x.get("date", 0)):
+                    if t.get("id") not in whitelist:
+                        await fireflies_api.delete_transcript(t["id"], self.guild_id)
+                        logger.info(f"Queue cleanup: deleted transcript {t['id']}")
+                        break
+
+        # Join meeting
         success, msg = await fireflies_api.add_to_live_meeting(
             meeting_link=self.meeting_link.value,
             guild_id=self.guild_id,
@@ -161,17 +249,19 @@ class JoinMeetingModal(discord.ui.Modal, title="Join Meeting Now"):
             interaction, interaction.client, self.guild_id
         )
 
+        # Always create poll to fetch transcript later (with or without glossary)
+        from datetime import datetime, timedelta
+        poll_time = datetime.now() + timedelta(hours=2, minutes=20)
+        scheduler.add_poll(
+            guild_id=self.guild_id,
+            poll_after=poll_time,
+            title=self.meeting_title.value,
+            glossary_text=glossary,  # May be None
+        )
+        
         if glossary:
-            # Create poll to fetch transcript later with glossary context
-            from datetime import datetime, timedelta
-            poll_time = datetime.now() + timedelta(hours=2, minutes=20)
-            scheduler.add_poll(
-                guild_id=self.guild_id,
-                poll_after=poll_time,
-                title=self.meeting_title.value,
-                glossary_text=glossary,
-            )
             await interaction.followup.send("📎 Đã lưu tài liệu cho summary sau", ephemeral=True)
+
 
 
 class ScheduleMeetingModal(discord.ui.Modal, title="Schedule Meeting"):
@@ -203,7 +293,7 @@ class ScheduleMeetingModal(discord.ui.Modal, title="Schedule Meeting"):
         self.time_input.label = f"Thời gian (HH:MM / +30m) - TZ: {tz_name}"
 
     async def on_submit(self, interaction: discord.Interaction):
-        await interaction.response.defer(thinking=True)
+        await interaction.response.defer(ephemeral=True)
 
         time_str = self.time_input.value.strip()
         
@@ -403,3 +493,41 @@ class DeleteSavedModal(discord.ui.Modal, title="Delete Saved Transcript"):
             await interaction.response.send_message(
                 f"❌ Không tìm thấy transcript `{local_id}`", ephemeral=True
             )
+
+
+class EditTitleModal(discord.ui.Modal, title="Edit Transcript Title"):
+    """Modal for editing transcript title"""
+
+    transcript_id = discord.ui.TextInput(
+        label="Transcript ID",
+        style=discord.TextStyle.short,
+        placeholder="01K94BJAWM5J... hoặc full ID",
+    )
+    new_title = discord.ui.TextInput(
+        label="New Title",
+        style=discord.TextStyle.short,
+        placeholder="Tên mới cho transcript",
+    )
+
+    def __init__(self, guild_id: int):
+        super().__init__()
+        self.guild_id = guild_id
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        
+        transcript_id = self.transcript_id.value.strip()
+        new_title = self.new_title.value.strip()
+        
+        if not new_title:
+            await interaction.followup.send("❌ Title không được để trống", ephemeral=True)
+            return
+        
+        success, message = await transcript_storage.update_title(
+            interaction.client, self.guild_id, transcript_id, new_title
+        )
+        
+        if success:
+            await interaction.followup.send(f"✅ {message}", ephemeral=True)
+        else:
+            await interaction.followup.send(f"❌ {message}", ephemeral=True)

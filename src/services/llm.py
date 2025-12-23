@@ -33,6 +33,7 @@ async def extract_glossary_vision(
     image_base64_list: list[str],
     guild_id: Optional[int] = None,
     timeout: int = 120,
+    retries: int = 3,
 ) -> Optional[str]:
     """
     Extract glossary and key terms from document images using GLM-4.6V-Flash.
@@ -41,6 +42,7 @@ async def extract_glossary_vision(
         image_base64_list: List of base64 encoded PNG images
         guild_id: Guild ID for guild-specific API key
         timeout: Timeout in seconds
+        retries: Number of retry attempts
 
     Returns:
         Extracted glossary text or None if failed
@@ -51,9 +53,9 @@ async def extract_glossary_vision(
     model = os.getenv("GLM_VISION_MODEL", "glm-4.6v-flash")
     client = get_client(guild_id)
 
-    # Build content with images
+    # Build content with images (GLM-4.6V supports up to 200 pages)
     content = []
-    for img in image_base64_list[:10]:  # Max 10 pages
+    for img in image_base64_list:
         content.append({
             "type": "image_url",
             "image_url": {"url": f"data:image/png;base64,{img}"}
@@ -61,35 +63,59 @@ async def extract_glossary_vision(
 
     content.append({
         "type": "text",
-        "text": """Từ tài liệu này, hãy trích xuất:
-1. **Thuật ngữ chuyên ngành** và định nghĩa ngắn gọn
-2. **Keywords quan trọng** liên quan đến chủ đề
-3. **Tên người, tổ chức, sản phẩm** được đề cập
-4. **Số liệu, ngày tháng** quan trọng
+        "text": """Đây là slides/tài liệu của một buổi họp/presentation.
 
-Format: bullet list chi tiết, ngắn gọn."""
+Hãy trích xuất NỘI DUNG CHÍNH từ các slides này:
+
+**Quy tắc:**
+- BỎ QUA các slide không có nội dung thực sự (slide tiêu đề, slide "Thank you", slide chỉ có hình ảnh không liên quan)
+- CHỈ trích xuất thông tin có giá trị, actionable
+- Gộp các thông tin liên quan lại với nhau
+
+**Format output:**
+## Chủ đề: [Tên chủ đề chính]
+
+### Nội dung chính
+- Điểm 1
+- Điểm 2
+...
+
+### Phân công công việc (nếu có)
+- [Tên người]: Task cụ thể - Deadline
+
+### Thông tin khác
+- Các chi tiết quan trọng khác
+
+Trích xuất đầy đủ các thông tin quan trọng."""
     })
 
-    try:
-        logger.info(f"Extracting glossary from {len(image_base64_list)} pages...")
+    for attempt in range(retries):
+        try:
+            logger.info(f"Extracting glossary from {len(image_base64_list)} pages (attempt {attempt + 1})...")
 
-        loop = asyncio.get_event_loop()
-        completion = await loop.run_in_executor(
-            None,
-            lambda: client.chat.completions.create(
-                model=model,
-                messages=[{"role": "user", "content": content}],
-                timeout=timeout,
-            ),
-        )
+            loop = asyncio.get_event_loop()
+            completion = await loop.run_in_executor(
+                None,
+                lambda: client.chat.completions.create(
+                    model=model,
+                    messages=[{"role": "user", "content": content}],
+                    timeout=timeout,
+                    extra_body={"thinking": {"type": "enabled"}},
+                ),
+            )
 
-        glossary = completion.choices[0].message.content
-        logger.info(f"Glossary extracted: {len(glossary)} chars")
-        return glossary
+            glossary = completion.choices[0].message.content
+            logger.info(f"Glossary extracted: {len(glossary)} chars")
+            return glossary
 
-    except Exception as e:
-        logger.error(f"Vision extraction failed: {e}")
-        return None
+        except Exception as e:
+            logger.error(f"Vision attempt {attempt + 1} failed: {e}")
+            if attempt < retries - 1:
+                backoff = 5 * (attempt + 1)  # 5s, 10s, 15s
+                logger.info(f"Retrying in {backoff}s...")
+                await asyncio.sleep(backoff)
+
+    return None
 
 
 async def summarize_transcript(
@@ -145,6 +171,7 @@ async def summarize_transcript(
                         },  # Limit context
                     ],
                     timeout=timeout,
+                    extra_body={"thinking": {"type": "enabled"}},
                 ),
             )
 
@@ -156,7 +183,7 @@ async def summarize_transcript(
             last_error = str(e)
             logger.error(f"LLM attempt {attempt + 1} failed: {e}")
             if attempt < retries - 1:
-                backoff = 2**attempt
+                backoff = 5 * (attempt + 1)  # 5s, 10s, 15s
                 logger.info(f"Retrying in {backoff}s...")
                 await asyncio.sleep(backoff)
 

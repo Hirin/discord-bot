@@ -13,7 +13,7 @@ MAX_FILE_SIZE = 10 * 1024 * 1024
 ALLOWED_EXTENSIONS = {".pdf"}
 
 
-def pdf_to_images(pdf_bytes: bytes, max_pages: int = 10, dpi: int = 150) -> list[str]:
+def pdf_to_images(pdf_bytes: bytes, max_pages: int = 200, dpi: int = 150) -> list[str]:
     """
     Convert PDF pages to base64 encoded PNG images.
     

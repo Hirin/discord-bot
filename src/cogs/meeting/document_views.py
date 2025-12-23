@@ -17,7 +17,7 @@ class DocumentPromptView(discord.ui.View):
     """Yes/No buttons for document upload prompt"""
 
     def __init__(self):
-        super().__init__(timeout=60)  # 60s timeout for button click
+        super().__init__(timeout=30)  # 30s timeout for button click
         self.wants_doc = None
         self.doc_interaction = None
 

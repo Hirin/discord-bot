@@ -11,6 +11,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
+from utils.discord_utils import send_chunked
+
 logger = logging.getLogger(__name__)
 
 # Store scheduled meetings and pending polls in JSON
@@ -176,29 +178,37 @@ def add_poll(
 
 
 def get_pending_polls() -> list[dict]:
-    """Get polls that are ready to execute"""
+    """Get polls that are ready to execute (pending or retry_pending past time)"""
     polls = load_polls()
     now = datetime.now()
 
     pending = []
     for p in polls:
-        if p.get("status") == "pending":
+        status = p.get("status")
+        
+        if status == "pending":
             poll_after = datetime.fromisoformat(p["poll_after"])
             if poll_after <= now:
                 pending.append(p)
+        elif status == "retry_pending":
+            # Check if retry time has passed
+            next_poll_time = p.get("next_poll_time")
+            if next_poll_time:
+                retry_time = datetime.fromisoformat(next_poll_time)
+                if retry_time <= now:
+                    pending.append(p)
 
     return pending
 
 
-def update_poll(poll_id: str, attempts: int = None, status: str = None):
-    """Update a poll entry"""
+def update_poll(poll_id: str, **kwargs):
+    """Update a poll entry with arbitrary fields"""
     polls = load_polls()
     for p in polls:
         if p.get("id") == poll_id:
-            if attempts is not None:
-                p["attempts"] = attempts
-            if status is not None:
-                p["status"] = status
+            for key, value in kwargs.items():
+                if value is not None:
+                    p[key] = value
             break
     save_polls(polls)
 
@@ -302,24 +312,69 @@ async def run_scheduler(bot):
                                 glossary = poll.get("glossary_text")
                                 
                                 # Summarize with glossary context
-                                transcript_text = fireflies.format_transcript(
+                                # Format for LLM: Use seconds for better citation
+                                transcript_text = fireflies.format_transcript_for_llm(
                                     transcript_data
                                 )
                                 summary = await llm.summarize_transcript(
                                     transcript_text, guild_id=guild_id, glossary=glossary
                                 )
+                                
+                                # Check if summary failed (rate limit / API error)
+                                if summary and summary.startswith("⚠️ LLM Error"):
+                                    # Check if this is already a retry
+                                    retry_count = poll.get("retry_count", 0)
+                                    
+                                    channel_id = config.get_meetings_channel(guild_id)
+                                    if channel_id and bot:
+                                        channel = bot.get_channel(channel_id)
+                                        if channel:
+                                            if retry_count < 2:  # Allow 2 retries (1h and 2h later)
+                                                # Schedule retry in 1 hour
+                                                retry_time = datetime.now() + timedelta(hours=1)
+                                                poll["retry_count"] = retry_count + 1
+                                                poll["next_poll_time"] = retry_time.isoformat()
+                                                poll["status"] = "retry_pending"
+                                                update_poll(poll_id, **poll)
+                                                
+                                                await channel.send(
+                                                    f"⚠️ **LLM API Error** (Rate Limit): Không thể tóm tắt `{t.get('title', 'Meeting')}` ngay bây giờ.\n"
+                                                    f"🔄 Sẽ thử lại sau **1 giờ** (lần thử {retry_count + 1}/2)."
+                                                )
+                                                logger.warning(f"Summary failed for {t_id}, scheduling retry in 1 hour")
+                                            else:
+                                                # Give up after 2 retries
+                                                await channel.send(
+                                                    f"❌ **LLM API Error**: Không thể tóm tắt `{t.get('title', 'Meeting')}` sau 2 lần thử.\n"
+                                                    f"📋 Vui lòng dùng `/meeting` > `Summarize Meeting` để tóm tắt thủ công.\n"
+                                                    f"**ID:** `{t_id}`"
+                                                )
+                                                logger.error(f"Summary failed for {t_id} after 2 retries, giving up")
+                                                update_poll(poll_id, status="failed")
+                                    break  # Exit loop, either scheduled retry or gave up
 
                                 # Save locally
                                 title = t.get("title", "Auto-polled Meeting")
-                                entry = transcript_storage.save_transcript(
+                                entry, is_new = transcript_storage.save_transcript(
                                     guild_id=guild_id,
                                     fireflies_id=t_id,
                                     title=title,
                                     transcript_data=transcript_data,
                                 )
 
-                                # Delete from Fireflies
-                                await fireflies_api.delete_transcript(t_id, guild_id)
+                                # Only upload to archive if new (not duplicate)
+                                if is_new:
+                                    await transcript_storage.upload_to_discord(
+                                        bot, guild_id, entry
+                                    )
+
+                                # No longer delete from Fireflies (queue-based deletion instead)
+                                # Generate Fireflies link
+                                ff_link = fireflies_api.generate_fireflies_link(title, t_id)
+                                
+                                # Process summary timestamps: [-123s-] -> [MM:SS](link)
+                                if summary:
+                                    summary = fireflies.process_summary_timestamps(summary, ff_link)
 
                                 # Send to Discord channel
                                 channel_id = config.get_meetings_channel(guild_id)
@@ -328,14 +383,16 @@ async def run_scheduler(bot):
                                     if channel:
                                         doc_status = " 📎" if glossary else ""
                                         msg = (
-                                            f"📋 **{title}**{doc_status} (ID: `{entry['local_id']}`)\n\n"
-                                            f"{summary or 'No summary'}"
+                                            f"📋 **{title}**{doc_status} (ID: `{entry.get('id') or t_id}`)\n\n"
+                                            f"{summary or 'No summary'}\n\n"
+                                            f"🔗 [Xem recording]({ff_link})"
                                         )
-                                        # Split if too long
-                                        if len(msg) <= 2000:
-                                            await channel.send(msg)
-                                        else:
-                                            await channel.send(msg[:2000])
+                                        
+                                        # 1. Send detailed summary first (chunked)
+                                        await send_chunked(channel, msg)
+                                        
+                                        # 2. Tag everyone at the end
+                                        await channel.send("@everyone Đây là nội dung meeting hôm nay")
 
                             break  # Process one transcript per poll cycle
 
@@ -354,9 +411,9 @@ async def run_scheduler(bot):
                         else:
                             update_poll(poll_id, attempts=new_attempts)
 
-            # === 3. Daily cleanup of old transcripts (2 months) ===
+            # === 3. Daily cleanup of old transcripts (4 months) ===
             if (now - last_cleanup).days >= 1:
-                transcript_storage.cleanup_old_transcripts(max_age_days=60)
+                transcript_storage.cleanup_old_transcripts(max_age_days=120)
                 last_cleanup = now
 
         except Exception as e:

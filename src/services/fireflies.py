@@ -11,9 +11,34 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 
+def clean_title(title: str) -> str:
+    """Clean meaningless titles like 'email@gmail.com - date - Untitled' to 'No Title'"""
+    if not title:
+        return "No Title"
+    
+    # Check for meaningless patterns
+    title_lower = title.lower()
+    if any(x in title_lower for x in ["@gmail.com", "@yahoo.com", "@outlook.com", "untitled"]):
+        # Check if it's just email - date - Untitled pattern
+        if re.match(r'^[\w.-]+@[\w.-]+\s*-.*-\s*untitled$', title_lower, re.IGNORECASE):
+            return "No Title"
+    
+    # Remove leading email if present
+    if "@" in title:
+        # Pattern: email - date - actual_title
+        parts = title.split(" - ")
+        if len(parts) >= 3 and "@" in parts[0]:
+            # Use last part as title if it's meaningful
+            last_part = parts[-1].strip()
+            if last_part.lower() not in ["untitled", ""]:
+                return last_part
+            return "No Title"
+    
+    return title.strip() or "No Title"
+
 async def scrape_fireflies(
     url: str, timeout: int = 60, retries: int = 3
-) -> Optional[list[dict]]:
+) -> Optional[tuple[str, list[dict]]]:
     """
     Scrape transcript from Fireflies.ai shared link.
 
@@ -23,7 +48,7 @@ async def scrape_fireflies(
         retries: Number of retry attempts
 
     Returns:
-        List of dicts with 'name', 'time', 'content' or None if failed
+        Tuple of (title, transcript_data) or None if failed
     """
     from playwright.async_api import async_playwright
 
@@ -57,6 +82,15 @@ async def scrape_fireflies(
                         const pageProps = window.__NEXT_DATA__?.props?.pageProps || {};
                         const note = pageProps.initialMeetingNote;
                         
+                        // Get title from TitleText span or from note data
+                        let title = '';
+                        const titleEl = document.querySelector('[data-sentry-element="TitleText"]');
+                        if (titleEl) {
+                            title = titleEl.innerText || '';
+                        } else if (note && note.title) {
+                            title = note.title;
+                        }
+                        
                         if (note && note.sentences) {
                             function formatTime(seconds) {
                                 if (!seconds) return '00:00';
@@ -67,6 +101,7 @@ async def scrape_fireflies(
                             
                             return {
                                 source: 'next_data',
+                                title: title,
                                 data: note.sentences.map(s => ({
                                     name: s.speaker_name || 'Unknown',
                                     time: formatTime(s.start_time),
@@ -105,7 +140,7 @@ async def scrape_fireflies(
                             }
                             
                             if (entries.length > 0) {
-                                return { source: 'dom', data: entries };
+                                return { source: 'dom', title: title, data: entries };
                             }
                         }
                         
@@ -138,7 +173,12 @@ async def scrape_fireflies(
                         entry["content"] = content.strip()
 
                     logger.info(f"Scraped {len(data)} entries")
-                    return data
+                    
+                    # Get title from scraped data
+                    title = transcript_data.get("title", "") or ""
+                    title = clean_title(title)
+                    
+                    return (title, data)
 
                 # No data found - will retry
                 debug_info = transcript_data.get("debug", {}) if transcript_data else {}
@@ -168,3 +208,69 @@ def format_transcript(entries: list[dict]) -> str:
     for entry in entries:
         lines.append(f"[{entry['time']}] {entry['name']}: {entry['content']}")
     return "\n".join(lines)
+
+
+def format_transcript_for_llm(entries: list[dict]) -> str:
+    """
+    Format transcript for LLM with seconds in timestamps.
+    Example: [117s] John: Hello
+    """
+    lines = []
+    for entry in entries:
+        time_str = entry.get("time", "00:00")
+        try:
+            # Parse HH:MM:SS or MM:SS to seconds
+            parts = [int(p) for p in time_str.split(":")]
+            if len(parts) == 3:
+                seconds = parts[0] * 3600 + parts[1] * 60 + parts[2]
+            elif len(parts) == 2:
+                seconds = parts[0] * 60 + parts[1]
+            else:
+                seconds = 0
+                
+            lines.append(f"[{seconds}s] {entry['name']}: {entry['content']}")
+        except ValueError:
+            # Fallback if parse fails
+            lines.append(f"[{time_str}] {entry['name']}: {entry['content']}")
+            
+    return "\n".join(lines)
+
+
+def process_summary_timestamps(summary: str, fireflies_id_or_url: str) -> str:
+    """
+    Process LLM summary to convert [-123s-] to [MM:SS](link).
+    
+    Args:
+        summary: Raw summary from LLM
+        fireflies_id_or_url: Fireflies ID (01K...) or full URL
+        
+    Returns:
+        Summary with hyperlinked timestamps
+    """
+    if "https://" in fireflies_id_or_url:
+        base_url = fireflies_id_or_url
+        # Remove existing query params if any
+        if "?" in base_url:
+            base_url = base_url.split("?")[0]
+    else:
+        base_url = f"https://app.fireflies.ai/view/{fireflies_id_or_url}"
+        
+    def replace_ts(match):
+        try:
+            seconds = int(match.group(1))
+            
+            # Convert to MM:SS or HH:MM:SS
+            m, s = divmod(seconds, 60)
+            h, m = divmod(m, 60)
+            
+            if h > 0:
+                time_str = f"{h:02d}:{m:02d}:{s:02d}"
+            else:
+                time_str = f"{m:02d}:{s:02d}"
+                
+            return f"[{time_str}](<{base_url}?t={seconds}>)"
+        except ValueError:
+            return match.group(0)
+            
+    # Regex for [-123s-]
+    return re.sub(r"\[-(\d+)s-\]", replace_ts, summary)

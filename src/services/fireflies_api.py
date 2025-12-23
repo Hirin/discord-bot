@@ -79,6 +79,38 @@ async def list_transcripts(
         return None
 
 
+async def get_transcript_count(guild_id: Optional[int] = None) -> int:
+    """Get count of transcripts on Fireflies"""
+    transcripts = await list_transcripts(guild_id, limit=50)
+    return len(transcripts) if transcripts else 0
+
+
+async def get_oldest_transcript(guild_id: Optional[int] = None) -> Optional[dict]:
+    """Get the oldest transcript (by date) from Fireflies"""
+    transcripts = await list_transcripts(guild_id, limit=50)
+    if not transcripts:
+        return None
+    
+    # Sort by date (oldest first) - date is timestamp in milliseconds
+    oldest = min(transcripts, key=lambda t: t.get("date", 0))
+    return oldest
+
+
+def generate_fireflies_link(title: str, transcript_id: str) -> str:
+    """
+    Generate Fireflies share link from title and ID.
+    
+    Format: https://app.fireflies.ai/view/{slug}::{id}
+    Slug: replace @ with -, spaces/special chars with -
+    """
+    import re
+    # Replace @ and special chars with -
+    slug = re.sub(r'[@\s.,;:!?\'"()\[\]{}]', '-', title)
+    # Remove consecutive dashes and trim
+    slug = re.sub(r'-+', '-', slug).strip('-')
+    return f"https://app.fireflies.ai/view/{slug}::{transcript_id}"
+
+
 async def get_transcript_by_id(
     transcript_id: str, guild_id: Optional[int] = None
 ) -> Optional[list[dict]]:

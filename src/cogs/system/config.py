@@ -106,6 +106,40 @@ class TimezoneModal(discord.ui.Modal, title="Set Timezone"):
             ephemeral=True,
         )
 
+
+class FirefliesLimitModal(discord.ui.Modal, title="Fireflies Storage Limit"):
+    """Modal for setting max Fireflies records"""
+
+    limit = discord.ui.TextInput(
+        label="Max records (1-50, default 6)",
+        style=discord.TextStyle.short,
+        placeholder="6",
+        default="6",
+    )
+
+    def __init__(self, guild_id: int):
+        super().__init__()
+        self.guild_id = guild_id
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            limit_val = int(self.limit.value.strip())
+            if not 1 <= limit_val <= 50:
+                raise ValueError("Out of range")
+        except ValueError:
+            await interaction.response.send_message(
+                "❌ Số không hợp lệ. Nhập 1-50.",
+                ephemeral=True,
+            )
+            return
+        
+        config_service.set_fireflies_max_records(self.guild_id, limit_val)
+        await interaction.response.send_message(
+            f"✅ Fireflies storage limit: `{limit_val}` records",
+            ephemeral=True,
+        )
+
+
 class ConfigView(discord.ui.View):
     """Dropdown view for config actions"""
 
@@ -127,6 +161,12 @@ class ConfigView(discord.ui.View):
             ),
             discord.SelectOption(
                 label="Custom Timezone", value="timezone"
+            ),
+            discord.SelectOption(
+                label="📁 Set Archive Channel", value="set_archive"
+            ),
+            discord.SelectOption(
+                label="📼 Fireflies Storage Limit", value="ff_limit"
             ),
             discord.SelectOption(
                 label="🔄 Sync Commands", value="sync_commands"
@@ -190,7 +230,13 @@ class ConfigView(discord.ui.View):
             embed.add_field(
                 name="Meetings Channel",
                 value=f"<#{channel_id}>" if channel_id else "Not set",
-                inline=False,
+                inline=True,
+            )
+            archive_id = config_service.get_archive_channel(self.guild_id)
+            embed.add_field(
+                name="Archive Channel",
+                value=f"<#{archive_id}>" if archive_id else "Not set",
+                inline=True,
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
 
@@ -205,6 +251,18 @@ class ConfigView(discord.ui.View):
 
         elif action == "timezone":
             await interaction.response.send_modal(TimezoneModal(self.guild_id))
+
+        elif action == "set_archive":
+            # Set current channel as archive channel
+            config_service.set_archive_channel(self.guild_id, interaction.channel_id)
+            await interaction.response.send_message(
+                f"✅ Đã set kênh này làm Archive Channel!\n"
+                f"Transcripts sẽ được backup vào <#{interaction.channel_id}>",
+                ephemeral=True,
+            )
+
+        elif action == "ff_limit":
+            await interaction.response.send_modal(FirefliesLimitModal(self.guild_id))
 
         elif action == "sync_commands":
             # Sync commands to this guild
