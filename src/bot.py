@@ -85,6 +85,15 @@ class DiscordBot(commands.Bot):
         logger.info(f"Bot ready: {self.user} (ID: {self.user.id})")
         logger.info(f"Guilds: {len(self.guilds)}")
 
+    async def on_guild_join(self, guild: discord.Guild):
+        """Auto sync commands when bot joins a new guild"""
+        try:
+            self.tree.copy_global_to(guild=guild)
+            await self.tree.sync(guild=guild)
+            logger.info(f"Commands synced to new guild: {guild.name} ({guild.id})")
+        except Exception as e:
+            logger.error(f"Failed to sync commands to {guild.name}: {e}")
+
     async def on_error(self, event, *args, **kwargs):
         """Global error handler"""
         logger.exception(f"Unhandled error in event: {event}")

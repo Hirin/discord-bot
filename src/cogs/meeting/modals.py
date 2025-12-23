@@ -197,12 +197,35 @@ class ScheduleMeetingModal(discord.ui.Modal, title="Schedule Meeting"):
     def __init__(self, guild_id: int):
         super().__init__()
         self.guild_id = guild_id
+        # Update label with timezone
+        from services import config as config_service
+        tz_name = config_service.get_timezone(guild_id)
+        self.time_input.label = f"Thời gian (HH:MM / +30m) - TZ: {tz_name}"
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(thinking=True)
 
         time_str = self.time_input.value.strip()
-        now = datetime.now()
+        
+        # Get guild timezone
+        from services import config as config_service
+        from datetime import timezone as tz_module
+        from zoneinfo import ZoneInfo
+        
+        tz_name = config_service.get_timezone(self.guild_id)
+        
+        # Parse timezone - support both UTC+X and IANA format
+        try:
+            if tz_name.upper().startswith("UTC"):
+                offset_str = tz_name[3:]
+                offset_hours = int(offset_str) if offset_str else 0
+                tz = tz_module(timedelta(hours=offset_hours))
+            else:
+                tz = ZoneInfo(tz_name)
+        except Exception:
+            tz = tz_module(timedelta(hours=7))  # Default UTC+7
+        
+        now = datetime.now(tz)
 
         try:
             # Parse time
@@ -231,7 +254,8 @@ class ScheduleMeetingModal(discord.ui.Modal, title="Schedule Meeting"):
 
         except Exception:
             await interaction.followup.send(
-                "❌ Format thời gian không hợp lệ. Dùng HH:MM hoặc +30m",
+                f"❌ Format thời gian không hợp lệ. Dùng HH:MM hoặc +30m\n"
+                f"_(Timezone: {tz_name})_",
                 ephemeral=True,
             )
             return

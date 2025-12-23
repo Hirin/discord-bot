@@ -58,6 +58,54 @@ class ApiModal(discord.ui.Modal, title="Set API Key"):
         )
 
 
+class TimezoneModal(discord.ui.Modal, title="Set Timezone"):
+    """Modal for setting timezone"""
+
+    timezone = discord.ui.TextInput(
+        label="Timezone (UTC offset hoặc IANA)",
+        style=discord.TextStyle.short,
+        placeholder="UTC+7, UTC-5, Asia/Ho_Chi_Minh",
+        default="UTC+7",
+    )
+
+    def __init__(self, guild_id: int):
+        super().__init__()
+        self.guild_id = guild_id
+
+    async def on_submit(self, interaction: discord.Interaction):
+        from datetime import timezone as tz_module, timedelta
+        from zoneinfo import ZoneInfo
+        
+        tz_name = self.timezone.value.strip()
+        
+        # Validate timezone - support both UTC+X and IANA format
+        try:
+            if tz_name.upper().startswith("UTC"):
+                # Parse UTC+7 or UTC-5 format
+                offset_str = tz_name[3:]
+                if offset_str:
+                    offset_hours = int(offset_str)
+                else:
+                    offset_hours = 0
+                # Validate by creating timezone
+                tz_module(timedelta(hours=offset_hours))
+            else:
+                # IANA format
+                ZoneInfo(tz_name)
+        except Exception:
+            await interaction.response.send_message(
+                f"❌ Timezone không hợp lệ: `{tz_name}`\n"
+                "Dùng format: UTC+7, UTC-5, hoặc Asia/Ho_Chi_Minh",
+                ephemeral=True,
+            )
+            return
+        
+        config_service.set_timezone(self.guild_id, tz_name)
+        await interaction.response.send_message(
+            f"✅ Timezone đã set: `{tz_name}`",
+            ephemeral=True,
+        )
+
 class ConfigView(discord.ui.View):
     """Dropdown view for config actions"""
 
@@ -70,12 +118,18 @@ class ConfigView(discord.ui.View):
         options=[
             discord.SelectOption(label="Set GLM API Key", value="api_glm"),
             discord.SelectOption(label="Set Fireflies API Key", value="api_fireflies"),
-            discord.SelectOption(label="Set Custom Prompt", value="prompt_set"),
+            discord.SelectOption(label="Custom Prompt", value="prompt_set"),
             discord.SelectOption(label="View Prompt", value="prompt_view"),
             discord.SelectOption(label="Reset Prompt", value="prompt_reset"),
             discord.SelectOption(label="View Config", value="info"),
             discord.SelectOption(
                 label="Set This Channel For Meetings", value="set_channel"
+            ),
+            discord.SelectOption(
+                label="Custom Timezone", value="timezone"
+            ),
+            discord.SelectOption(
+                label="🔄 Sync Commands", value="sync_commands"
             ),
         ],
     )
@@ -115,6 +169,7 @@ class ConfigView(discord.ui.View):
             ff = config.get("fireflies_api_key")
             has_prompt = bool(config.get("custom_prompt"))
             channel_id = config.get("meetings_channel")
+            timezone = config_service.get_timezone(self.guild_id)
 
             embed = discord.Embed(title="⚙️ Server Config", color=discord.Color.blue())
             embed.add_field(
@@ -125,7 +180,12 @@ class ConfigView(discord.ui.View):
             embed.add_field(
                 name="Prompt",
                 value="Custom ✅" if has_prompt else "Default",
-                inline=False,
+                inline=True,
+            )
+            embed.add_field(
+                name="Timezone",
+                value=f"`{timezone}`",
+                inline=True,
             )
             embed.add_field(
                 name="Meetings Channel",
@@ -142,6 +202,27 @@ class ConfigView(discord.ui.View):
                 f"Bot sẽ tự động gửi summary vào <#{interaction.channel_id}>",
                 ephemeral=True,
             )
+
+        elif action == "timezone":
+            await interaction.response.send_modal(TimezoneModal(self.guild_id))
+
+        elif action == "sync_commands":
+            # Sync commands to this guild
+            await interaction.response.defer(ephemeral=True, thinking=True)
+            try:
+                bot = interaction.client
+                guild = interaction.guild
+                bot.tree.copy_global_to(guild=guild)
+                await bot.tree.sync(guild=guild)
+                await interaction.followup.send(
+                    "✅ Đã sync commands cho server này!",
+                    ephemeral=True,
+                )
+            except Exception as e:
+                await interaction.followup.send(
+                    f"❌ Lỗi sync: {str(e)[:100]}",
+                    ephemeral=True,
+                )
 
     @discord.ui.button(label="🔄 Reload", style=discord.ButtonStyle.secondary, row=1)
     async def reload_button(

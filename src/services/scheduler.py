@@ -70,13 +70,20 @@ def add_scheduled(
 
 def get_pending() -> list[dict]:
     """Get pending scheduled meetings"""
+    from datetime import timezone
+    
     meetings = load_scheduled()
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
 
     pending = []
     for m in meetings:
         if m.get("status") == "pending":
             scheduled = datetime.fromisoformat(m["scheduled_time"])
+            # Convert to UTC if timezone-aware, else assume UTC
+            if scheduled.tzinfo is None:
+                scheduled = scheduled.replace(tzinfo=timezone.utc)
+            else:
+                scheduled = scheduled.astimezone(timezone.utc)
             if scheduled <= now:
                 pending.append(m)
 

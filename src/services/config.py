@@ -117,3 +117,18 @@ def get_meetings_channel(guild_id: int) -> Optional[int]:
 def set_meetings_channel(guild_id: int, channel_id: int):
     """Set meetings channel for a guild"""
     set_guild_config(guild_id, "meetings_channel", str(channel_id))
+
+
+# Default timezone is Vietnam (UTC+7)
+DEFAULT_TIMEZONE = "UTC+7"
+
+
+def get_timezone(guild_id: int) -> str:
+    """Get timezone for a guild, default to Vietnam"""
+    config = get_guild_config(guild_id)
+    return config.get("timezone") or DEFAULT_TIMEZONE
+
+
+def set_timezone(guild_id: int, timezone: str):
+    """Set timezone for a guild"""
+    set_guild_config(guild_id, "timezone", timezone)
