@@ -1,0 +1,1100 @@
+{
+  "id": "01KD9KTPFRNF89KYCCRP528BV2",
+  "fireflies_id": "01KD9KTPFRNF89KYCCRP528BV2",
+  "guild_id": 1452341542420484127,
+  "title": "M07W03 - Transformer",
+  "created_at": "2025-12-25T02:14:46.228118",
+  "created_timestamp": 1766628886,
+  "transcript": [
+    {
+      "name": "Speaker 1",
+      "time": "05:38",
+      "content": "Xin chào tất cả các bạn. Các bạn nghe rõ không? Cảm ơn các bạn. Đầu tiên xúc mừng các bạn Giáng sinh, dù các bạn có theo đạo hay không thì cũng là một ngày mọi người đi chơi mà chúng ta ngồi đây chúng ta học Đó thì cũng là một cái mỗi người mỗi định hướng khác nhau Cho nên là mỗi người có niềm vui riêng đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "06:27",
+      "content": "Tất nhiên đi chơi là vui hơn rồi, điều đó đều chắc chắn Nhưng mà ở đây chúng ta vì mục đích lớn, vì mục tiêu lâu dài chúng ta ở đây Chúng ta bắt đầu Ngày tuần này là chúng ta sẽ thảo luận về transformer là một trong những cái nền tảng cho bây giờ nó chính là cái cái lõi cho bây giờ nó giống như là khi mà chúng ta xây nhà thì chúng ta cần những vật liệu đó thì vật liệu bao gồm ximăng, cát, sắt thép và cục gạch thì đây là transformer mình có thể xem như là những cục gạch đó là là nó sẽ là nền tảng để chúng ta xây dựng nên những ứng dụng khác nhau. Với mỗi ứng dụng khác nhau thì chúng ta có cách thiết kế khác nhau"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "07:14",
+      "content": "Nhưng mà nền tảng vẫn là những vật liệu cơ bản. Và Transformer là vật liệu cơ bản mà hầu như mọi ứng dụng ngồi bật bây giờ đều đang sử dụng. Vậy thì chúng ta thảo luận xem là chan farmer nó như thế nào. Bài ngày hôm nay thì nó lại liên quan đến phần text classification. Sao nó lại... Mình đang làm việc với ảnh mà sau ngày hôm nay lại làm việc với text là bởi vì chan farmer được tạo bên ngữ cảnh là text. Cho nên là cái bài chan farmer nó gắn liền với bài text. Thì ngày thứ 6 là chúng ta sẽ thảo luận một phiên bản của Transformer bên giữa liệu ảnh. Thì lúc đó nhiều khi các bạn quen với ảnh rồi các bạn sẽ quen thuộc"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "07:56",
+      "content": "Còn ngày hôm nay chúng ta giả sử chưa quen thuộc với text thì ngày hôm nay chúng ta học thôi. Bây giờ là mình coi data là chung. Sau này data nó có là text là ảnh là âm thanh là gì đó thì mình cứ sẵn sàng mình học thôi bởi vì nó chỉ xử lý một xíu gốc đầu thôi. Còn khi mà nó biến thành một vector một con số rồi thì nó như nhau. Cho nên ở đây coi như là chúng ta học một cách xử lý một loại data mới tên là text"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "08:22",
+      "content": "Rồi, thì buổi ngày hôm nay là chúng ta sẽ thảo luận xem là cái bài text nó bao gồm những bước gì và thảo luận đến transformer xem là tại sao là chúng ta cần transformer trong khi là chúng ta có CNN rồi, chúng ta có multi-layer shutdown hoặc là buổi thứ 7 tuần rồi là chúng ta học về ANN Tại sao chúng ta lại cần Transformer"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "08:47",
+      "content": "Và khi mà chúng ta học Transformer thì nhiều khi thì chúng ta không hiểu hết Transformer nhưng mà đứng ở cái cạnh sử dụng nó như hộp đen hay là đứng ở cái cạnh là mình là người quản lý dự án hay là mình không phải là người trực tiếp làm thì lúc này chúng ta sẽ hiểu nó như thế nào thì lúc này nó cũng tương tự như là CNN hay là ANN hay là Multi Layer Subchannel chẳng qua là nó tổng hợp thông tin đó thì cứ input đầu vô là gì output đầu ra nó như thế nào đó thì hôm nay chúng ta sẽ khảo luận Đầu tiên là chúng ta quay sang bài Text Classification"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "09:19",
+      "content": "Khi mà chúng ta làm việc với Table, làm việc với Sequence hay là làm việc với Ảnh thì bản thân là cái Table thì giả sử nó có những cái cột mà nó chứa text, nó chứa cái loại hay là chứa cái gì đó thì chúng ta convert nó sang số. Đó, coi như là cơ bản nó chứa số. Convert rất là đơn giản dùng Pandas. Còn bản thân ảnh và time series thì nó đã là số rồi. Cho nên là khi mà mình xử lý với những loại dữ liệu đó, chúng ta cảm thấy rất là bình thường, không có gì đặc biệt. Nhưng mà ngày hôm nay là khi mà chúng ta làm việc với text, bởi vì text đã được tạo ra cho con người, chứ máy đâu quan tâm text"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "09:57",
+      "content": "Text là hiển thị cho con người, bởi vì khi mà nó lưu trước cái text đó thì nó sẽ lưu thành con số, lưu xuống database, hoặc là nó truyền qua mạng, nó convert sang dạng số"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "10:06",
+      "content": "Thế còn khi mà hiển thị lên màn hình cho mình nhìn thấy thì lúc này nó sẽ dựa vào một cái bản cha nào đó nó convert từ những con số đó thành cái ký tự cho mình hiển thị ra cho mình thấy và nó có ý nghĩa với con người Cho nên là khi mà mình xử lý dữ liệu text này bởi vì cái mô hình là cái mà máy nó làm thì máy nó đâu có hiểu text đâu cho nên là mình phải làm cái bước là chuyển đổi từ text sang dạng số để cho máy nó hiểu Cho nên là mình sẽ có cái bước là Text Vectorization. Đó là mình truyền đổi từ dạng chuỗi sang dạng số. Rồi, và sau đó nó có một cái bước gọi là Embedding. Ồ, cái bước này nó mới nè"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "10:54",
+      "content": "Đó, thì mình xem tại sao mình cần có bước này. Thì sau khi mình có bước này xong thì đến mức này là nó giống như các loại data khác rồi và input của mình là một tensor, ai cứ gọi là một tensor Vậy là nó là một dạng con số nào đó, sau đây chúng ta xử lý thôi Thì trong chỗ này mình có thể là để multi-layer of subtrons Thậm chí mình có thể dùng convolution 1D là nó chạy giống như time series chạy được 1D Đó thì mấy cái này nó có cái nhược điểm Mặc dù là mình có ANN là cái thiết kế riêng cho cái dạng SQL nhưng mà nó cũng có nhược điểm cho nên là ngày hôm nay chúng ta học về Transformer. Thì mấy cái chỗ này là cái chỗ tổng hợp thông tin thôi"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "11:41",
+      "content": "Đó cho nên là khi mà nó tổng hợp thông tin như vậy thì nó có nhiều cách để tổng hợp. Và ngày hôm nay là mình xem cái Transformer tổng hợp như thế nào chứ thật ra những kiến thức mình đang có là đã ok rồi. Đó ok. Rồi. Ờ, hôm nay Ad đứng cho nó khỏe. Để Ad đứng đổi phong cách xíu. Rồi. Sau đó mình làm gì đây? Bây giờ mình coi thử. Bây giờ mình thảo luận một cái version đơn giản nhất cho cái bài Text Classification. Cực kỳ đơn giản luôn. Để các bạn thấy được rõ vai trò của 2 cái bước này"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "12:27",
+      "content": "Đây là bài text classification, phân loại nhị phân Ví dụ như là chúng ta có một cái comment ở trên Twitter hay là trên Facebook Bây giờ mình muốn đánh giá xem là cái comment đó là positive hay negative Hoặc là chúng ta có một bộ phim, chúng ta có những cái review ở bên dưới những cái bộ phim đó chúng ta muốn đánh giá xem là bộ phim đó đang là positive hay là negative Đó, vậy có lẽ là input là một chuỗi Giả sử add cụ thể add để đây là 32 từ 32 từ. Ok, input là một chuỗi mà khoảng có 32 từ. Sắp xỉn 32 từ ý nghĩa là gì? Bởi vì trong cái chuỗi nó có thể có dấu phẩy, dấu chấm hay gì đó"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "13:08",
+      "content": "Thì chúng ta sẽ xử lý nó, chúng ta quan tâm đến mỗi từ thôi đúng không? Bởi vì dấu phẩy, dấu chấm thì nó cũng không nhiều ý nghĩa lắm. Ở đây giả sử cái chuỗi nó chứa 32 từ. Vậy là input của mình là một cái text. Nó chứa 32 từ"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "13:21",
+      "content": "Và cho chúng ta xử lý chúng ta sẽ biến 32 từ này thành 32 con số với dựng như là nó có một cái list chứa các con số 1, 7, 9, 2, 1, 8 gì đó mà chứa 32 con số vậy nó có cái shape này đây mình có 32 từ và đây là mình chuyển qua cái shape cái shape nó là một cái vector nó chứa 32 con số vậy là mỗi từ nó sẽ biến thành một con số đó là cái mục tiêu của cái bước re-processing Làm như thế nào đó thì mình sẽ thảo luận sau. Nhưng mà nó sẽ biến thành như thế. Bởi vì sao? Bởi vì máy nó đâu có xử lý được từ đâu. Máy nó sẽ xử lý số. Cho nên là nó có cái cách chuyển như vầy. Rồi"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "14:04",
+      "content": "Sau đó, mỗi con số này, một từ nó biểu diễn bằng một con số. Thì lúc này mình thấy là ok, nó nằm trên một cái chục. Vậy là một từ, các từ nó nằm trên đây. Vậy là, ví dụ con số 2, con số 8 ở đây, số 2 nó biểu diễn cho từ Go, số 8 nó biểu diễn cho từ Study chẳng hạn. Thì nó nằm trên một chục là nó khó biểu diễn lắm, nó khó. Rất là khó dựa mấy con số này để đưa ra quyết định, rất là khó. Cho nên là nó có một cái đó là thay vì mình biểu diễn trên một chục thì mình sẽ biểu diễn trên ba chiều chẳng hạn. Mỗi từ nó sẽ biến thành một cái điểm trong không gian ba chiều"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "14:44",
+      "content": "Và những cái điểm này nó có thể dịch chuyển trong quá trình training và tham số data S-E-S của mỗi điểm này nó là tham số nó thay đổi trong quá trình training luôn Vậy là mỗi điểm này nó sẽ dịch chuyển sao cho cái bài toán này dạy được hay là dịch chuyển sao cho hàm lot nó xuống, nó kéo hàm lot xuống Hơi trừ tượng khúc này nha, khúc này nó hơi trừ tượng, lát nữa mình vô mình thảo luận Sau đó mình Bây giờ mình sẽ làm bài này trước đã. Bây giờ mình đi vô bước này nha. Nó hơi nhiều thứ nhưng mà Ad sẽ bóc tắt từ từ với các bạn. Vấn đề không vấn đề gì. Rồi. Đầu tiên là mình có một chuỗi. Sau đó mình sẽ biến nó thành những con số"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "15:36",
+      "content": "Những từ thành những con số. Rồi thì nó có một cái đoạn code dài dài như vậy. Mấy các đoạn code này mình code cũng được nhưng mà nó có sẵn thư viện rồi, mình xài thư viện thôi chứ thật ra mình code lại cũng bình thường. Ad sẽ giải thích từ từ nha. Rồi. Bước 1. Re-processing. Mình sẽ biến đổi các từ riêng biệt thành các con số. Thì cách làm như thế nào? Đó. Cách làm là đây là tập dữ liệu mình sẽ xử lý. Giả sử nguyên tập dữ liệu rất là... Tất cả mọi dữ liệu mình có. Giả sử mình có 2 sample thôi. Cái này gọi là corpus. Là dữ liệu liên quan đến text mình đang có. Bây giờ mình sẽ xử lý dữ liệu này. Lúc này mình hiểu trên đời thực có rất nhiều text"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "16:30",
+      "content": "Đời thực có rất nhiều nhưng mà ở đây mình đang làm đúng cái bài toán này thôi. Cho nên là mình thấy... Trong bài toán này nó có bằng này từ thôi. Thì lúc này mình hiểu đây là tất cả những cái từ mà mình đang có. Mình hiểu như thế. Mình hiểu là trên thế giới này nó có bằng này từ thôi. Chứ mình đừng có hiểu thế giới thực là nó có rất nhiều từ. Nhiều khi mình đang hiểu thế giới thực nó có nhiều từ là mình đang hiểu ngữ cảnh tiếng Việt hay tiếng Anh. Chứ thật ra mình còn nhiều ngôn ngữ khác nhau nữa. Cho nên mình không thể xử lý hết tất cả ngôn ngữ tồn tại trên thế giới này một lúc không được. Mình chỉ gom lại đúng cái data mình đang có"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "16:58",
+      "content": "Và data mình đang có là những cái này. Rồi, sau đó mình biến đổi những từ trong đây thành một con số thì làm sao ta? Ồ, thì rất là đơn giản thôi. Mình gán nó. Mình bảo ok, từ này mình gán bằng số 0, từ này gán bằng số 1, từ này gán bằng số 2, số 3, từ này tồn tại rồi gán bằng số 3, y số 4, ờ số 5. CS chưa tồn tại, số 6, Topic chưa có, số 7. Giả sử nó có gì đó chứ, có từ A đây, A đây có rồi, số 1. Rồi chỗ này nó có từ Ơ lần nữa thì Ơ lên lên số 5. Cứ như thế. Thì mình cứ gắn tên lượt thôi. Thứ tự, từ nào là số nào không quan trọng. Quan trọng là nó có, ảnh xạ 11 là được"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "17:51",
+      "content": "Thay vì mình nói từ Q thì bây giờ mình ảnh xạ từ 0"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "17:55",
+      "content": "Thay vì mình nói từ learning thì mình ánh xạ số 2 Thay vì mình hiểu là mình đưa từ we vô mô hình Mình đưa từ learning vô mô hình Thì lúc này mình đưa số 2 Cứ từ learning mình đưa số 2 Cứ gặp từ learning mình đưa vô số 2 Vậy mô hình nó sẽ hiểu à con số 2 này Nó đang ánh xạ 11 với từ learning Vậy là mình sẽ có một bước biên dịch chuyện đó Mình có một bảng tra mình làm một chuyện đó Vậy là cứ learning mình xử lý một cái text Có giá trị là learning thì mình cứ đưa số 2 vô mô hình thôi Vậy là cái bước mà chuyển đổi từ text từ từng cái từ như vầy từng word từng từ sang con số đó thì mình dùng kiểu dictionary cũng được đúng không mình lấy mình cứ đắn index thì mình làm bước như thế thì khi mà mình xử lý thì mình không cần quan tâm đến chữ hoa chữ thường cho nên là thông thường người ta sẽ chuyển đến chữ thường hết Bởi vì mình nhìn vô đây mình cũng hiểu mà"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "18:57",
+      "content": "Chứ còn cái này là mình văn phong cho nó đẹp thôi. Chứ còn mình nhìn vô đây mình cũng hiểu. Ví dụ ông San Alman, ông comment trên Twitter, ông luôn luôn gọi chữ thường hết. Kiểu thấy mọi người đọc vẫn hiểu thôi. Cho nên là mấy cái này là thuộc loại văn phong cho đúng chứng tả thôi. Chứ còn về mặt ý nghĩa cô rộng, ý nghĩa cốt lõi thì mình không dùng chữ hoa chữ thường thì nó vẫn thể hiện được cái ý nghĩa cốt lõi"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "19:19",
+      "content": "Thì thay vì mình tự làm, thì mình sử dụng những cái hèm có sẵn trong HackinFace thì ở đây mình xài một cái trong PyTorch mình sử dụng những cái trong PyTorch và HackinFace rồi mình làm rồi mình làm sao đây đầu tiên là mình có cái dữ liệu này mình sẽ xem nguyên cái dữ liệu này là tất cả những cái gì mình đang có để mình xây dựng mỗi từ tương ứng với một con số thì ở đây là ok mình khai báo một cái tokenizer là Token là từng thành phần đơn vị nhỏ nhất mà đưa vô mô hình Nó có thể là cách đơn giản nhất là một từ Nhiều khi người ta cắt ra cái chỗ này thành hai từ Hoặc là người ta có nhiều cách khác nhau Nhưng mà cái cách đơn giản mà mình dễ hiểu nhất là mình cứ lấy mỗi từ gọi là một token Rồi trong đó nó có một động từ là tokenize là cái hành động mà mình có một cái chuỗi mình tắt ra thành từng cái thành phần nhỏ từng thành phần token gọi là tokenize là hành động Nhưng mà cái mà nó tạo ra được cái đó thì thêm chữ ơi vô thì là cái này là cái, cái nó sẽ làm ra kết quả cái mà nó sẽ làm hành động tắt ra Vậy là cái này mình tạo ra một cái đối tượng trong đây là đối tượng tokenizer và mình đưa cái tham số là word level có nghĩa là nó có nhiều cách thức trong đó ngày hôm nay mình học cái cách là ok hãy tắt ra mà đơn vị cuối cùng là thành mỗi từ và dựa vào đâu thì thông thường mình sẽ dựa vào khoảng trắng mình dựa vào khoảng trắng thì mình tắt ra cho nên mình bảo ok cái phần thông tin đưa khoảng trắng mình đưa vào đây dựa vào cái tham số normalizer có nghĩa là cái chỗ này nó sẽ tạo ra mình một cái tokenizer và thông tin là khoảng trắng xin lỗi các bạn thông tin là khoảng trắng nằm đây thông tin là khoảng trắng rồi và cái hành động mà nó biến những chữ hoa thành chữ thường hết thì mình dùng cái hàm lower trong string cũng được nhưng mà thôi ở đây nó có sẵn rồi thật ra trong đây nó làm thế thôi mà nó làm sẵn cho mình thì ở đây mình dùng luôn thôi nhanh đó thì cái chỗ này nó giúp cho mình lát nữa khi mà nó xử lý thì nó gặp chuỗi nó sẽ kéo thành chữ thường hết rồi Giờ bắt đầu 2 dòng 15 và dòng 18 thì nó liên quan đến mô hình 1 xíu Dòng 15 cái ngưỡng cảnh như sau Bây giờ mô hình của mình, các bạn để ý mô hình của mình mà khi mà mình học cho đến bây giờ thì có phải là hồi trước khi mà chúng ta xử lý với dưới lỗ bảng thì input là 1 vector Mà vector này phải xác định là bằng bao nhiêu, cụ thể là bao nhiêu luôn Hoặc là một cái ảnh thì mình phải xác định là bao nhiêu luôn 32 x 32 hay là 64 x 64 Mình thiết kế nó phải có một cái kích thước cụ thể luôn đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "22:16",
+      "content": "Đó thì ở đây cũng thế Là chúng ta đưa vô một chuỗi các từ Một sequence, một chuỗi các từ Vậy thì mình phải xác định là bao nhiêu luôn chứ mình không có đưa thoải mái được Ví dụ ở đây mình xác định là bằng 5 Mình cho, người ta hay dùng cái từ là sequence length là nói đến độ dài của chuỗi đó. Ví dụ cho bằng 5. Cho bằng 5. Vậy là chuyện gì xảy ra khi mà input của mình chỉ có 4 từ thôi. Ví dụ, we are learning AI chỉ có 4 từ thôi. Vậy đâu có được. Mô hình của mình bắt buộc phải có 5 con số đi vô. 5 thành phần. Mỗi thành phần đây mình hiểu là 1 từ. Mỗi từ tương ứng 1 con số. Vậy là phải có 5 con số"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "23:05",
+      "content": "5 con số đi vô giờ chỉ có 4 thôi thì sao giống như là bức ảnh của mình ở đây mình có bức ảnh là 28 bây giờ giả sử mô hình của mình yêu cầu phải đưa vô 32-32 triệu bởi vì giả sử mình thiết kế như thế thì mình làm cái bước resize cái ảnh lên resize ở đây thì mình cũng tương đồng với cái hiệu mình hiểu đây là mình padding mình thêm cái button bên ngoài cũng được thì nó cũng làm một cách tùy sai theo cái kiểu button mình làm button ở đây thì ở đây cũng thế chỗ này mình bảo ok đây có 4 từ thôi vậy thì 4 từ thì mình thêm 1 từ nữa thêm 1 cái từ gọi là cái từ này là từ thay vì ảnh mình chèn số 0 vô thì cái này mình cũng chèn số 0 vào mình bảo ok đây là button thì ở đây là mình bảo button đi mình bảo đây là ký tự button Nó là ký tự luôn"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "24:01",
+      "content": "Mình viết cái chữ path ở đây. Thông thường mọi người ký hiệu là như vậy. Nó là cái chuỗi giống như vầy luôn. Mình hiểu, à, cái này là path. Mình thêm vô để cho nó đủ 5 từ. Đó, cho nên ở đây mình bảo, ok. Là cái SQL LEN bằng 5 nè. Đó. Mà giả sử như là đang xử lý với một cái sample nào đó. Mà sample này nó có 4 từ thôi. Vậy thì nó sẽ thêm một cái ký tự tên là như vậy. Lấy cái chuỗi này nè, gắn vô đây để cho nó đủ. Rồi. Và cái ký tự này, xin lỗi, một cái chuỗi này, nó phải tự ứng với một con số. Lấy con số 1 luôn. Vậy là con số 1 nó liên quan đến path. Xác định trước luôn. Rồi"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "24:49",
+      "content": "Đó là cái ngưỡng cảnh thứ nhất. Còn ngưỡng cảnh thứ hai, giả sử mà có một cái câu mà nó dài hơn 5, cái chuyện này rất phổ biến. Ví dụ, bởi vì network của mình nó phải xử lý với một cái chuỗi cổ đơn cho nên là nhiều khi có một cái câu comment nào đó nó khá dài, ví dụ comment cái phim nào đó dài quá thì mình cắt bớt đi và mình chấp nhận mất thông tin chuyện đó là chuyện thực tế, mình chấp nhận mất thông tin phía sau mình cắt khúc đầu bằng cái giá trị 5 ký tự chẳng hạn, đó thì lúc này mình bảo ok chỗ này xác định là nếu mà nó dài quá thì cắt đi bằng 5, đó cho nên nó tổn tại 2 Rồi. Đó"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "25:32",
+      "content": "Sau đó, nó có một cái nguyên cảnh thực tế như vầy. Giờ sự trong tiếng Việt của mình hay trong tiếng Anh. Trong tiếng Anh mình hay học là tiếng Anh là ok bây giờ không biết được là 6.5 là bao nhiêu từ để có thể xác định cái số lượng từ mình cần biết. Hoặc là trong tiếng Anh người ta nói ok chỉ cần biết 1.000 từ phổ biến nhất thôi là giải quyết được hầu như 80% trong các conversation phổ biến. Đọc nhiều blog nói vậy. Hoặc là chúng ta kỹ hơn, chúng ta học 3 ngàn từ, ví dụ ạ. Cho nên là nhiều khi mình chọn... Có rất nhiều bài báo nghiên cứu người ta bảo OK, lấy 5 ngàn từ ra"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "26:10",
+      "content": "Thì 5 ngàn từ này hầu như nó có thể dùng để nói chuyện trong hầu hết tất cả những chủ đề phổ biến trong tiếng Anh. Chọn 5 ngàn từ phổ biến nhất. Chỗ này nó có ý nghĩa là mình không cần phải quản lý tất cả mọi từ bởi vì một số từ nó hiếm gặp thì thôi mình coi như những từ hiếm gặp đó mình lờ đi bởi vì thật ra cái ý nghĩa nó nằm nguyên một cái câu trong một cái câu dài nó có một vài từ mình lờ đi thì cũng có ảnh hưởng gì đâu đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "26:39",
+      "content": "Chứ ví dụ trong một cái câu chuyện các bạn nghe ai kể chuyện mình đâu có đảm bảo được là tất cả mọi từ trong lời nói đó mình đều hiểu hết hoặc là tất cả mọi ý mình đều nhớ hết nhớ hết đâu nhưng mà tổng quát về cái nội dung chính của câu chuyện mình vẫn nhớ chứ Đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "26:54",
+      "content": "Đó cho nên là là mặc dù là mình có thể bỏ đi một vài thông tin nhỏ đó nhưng mà nó không ảnh hưởng đến toàn cục và nó giúp cho mình quản lý số lượng từ nhỏ hơn cho nên ở đây mặc dù mình thấy nó có 1 2 3 4 5 không phải 4 5, 6, 7, 8 8 từ 8 từ mà nó sẽ thêm 1 từ pass nữa là 9 từ và giả sử nó còn thêm nữa ví dụ nó có 17 từ chẳng hạn thì lúc này mình đọc thật ra mình chỉ cần quản lý 8 từ thôi 8 từ phổ biến nhất nó sẽ sắp xếp theo tầng xuất hiện trong data của mình là những từ nào xuất hiện nhiều nó sẽ lấy vô từ nào xuất hiện ít hơn thì nó xoay loại đi và nó lấy 8 từ xuất hiện nhiều nhất bởi vì dữ liệu đây mình nhỏ cho nên là nó sẽ gặp từ nào trước nó lấy thôi giả sử nó xuất hiện cùng một lần cho nên là đây là lấy 8 lấy 8 lý do là mình không cần phải quản lý hết tất cả mọi từ Giống như là tiếng Anh đó, bây giờ các bạn mà thuộc 5 ngàn từ thôi, các bạn thoải mái, đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "28:07",
+      "content": "Ngay cả tiếng Việt của mình, mình đâu có biết tất cả mọi từ vận đâu. Bây giờ mình với các bạn ra nghề ăn, nói chuyện xem, nhiều khi mình chả hiểu mấy cái từ ngoài đó. Nhưng mà chắc ráng nói cũng hiểu chứ, đúng không? Kiểu vậy. Đó, thì... Thì... Thì nó là như vậy. Rồi. Cho nên chỗ này mình bảo, ok, quản lý 8 từ. Quản lý 8 từ nghĩa là sao? Nghĩa là.."
+    },
+    {
+      "name": "Speaker 1",
+      "time": "28:32",
+      "content": "Nó sẽ xây dựng OK nó lấy cái này là cái nó lấy cái này là cái từ thứ nhất từ thứ hai cái này lập lại nè lấy từ thứ 3 ví dụ thế và thứ 4 thứ 5 thứ 6 thứ 7 đến số 7 là 8 từ rồi đó đó ví dụ thế nhưng mà ở đây là luôn luôn mình phải lấy cái từ này padding cộng thêm một cái unknown đó unknown nghĩa là gì Bởi vì mình đã xác định là mình sẽ loại bỏ đi một số từ cho nên là khi mình đã loại bỏ rồi mà mình đang mã hóa một cái từ mà nó không nằm trong cái tập mà mình quản lý có một cái từ mới thì mình bảo nó là cái từ unknown. Từ không biết. Ad lấy ví dụ. Quay lại ví dụ chỗ này"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "29:22",
+      "content": "Ad lấy 8 từ. Vậy là 8 từ và bảo xác định luôn là trong này nó phải chứa unknown và chứa path. Vậy là unknown sẽ lấy số 0"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "29:30",
+      "content": "Và path này mình đã xác định số 1 rồi cho nên là nó sẽ lấy 2 cái này sau đó nó đến lấy AI tại sao AI xuất hiện 2 lần sau đó vì cái cách thức hoạt động thì nó sẽ gặp chữ A trước mặc dù chữ A xuất hiện 1 lần chữ A 1 lần cho nên để index số 3 tương tự như thế mình lấy A lấy CS lấy Ease Learning vậy là cái từ GUI và TOPIC không lấy GUI và TOPIC không lấy vậy sau này khi mà chúng ta muốn chuyển cái chữ GUI này thành con số để đưa vô mô hình bởi vì chữ GUI không tồn tại trong đây cái này gọi là DICTIONARY chữ GUI không tồn tại trong đây thì nó nằm trong này gọi là cái từ không biết số 0 gặp từ GUI đẩy số 0 gặp từ TOPIC đẩy số 0 hoặc là một cái từ khác nữa Nhiều khi trong quá trình inference, quá trình chạy thật, nó có một cái từ mới thì sao"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "30:31",
+      "content": "Để số 0 vô. Vậy chỗ này xác định là OK, chỉ chọn 8 thôi. Rồi. Vậy là từ chỗ này đến chỗ này mình khai báo. Sau đó mình có cái copost là copost chứa toàn bộ data của mình. Mình đẩy vào đây"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "30:53",
+      "content": "Và mình đẩy những cái cấu hình mình vừa làm vào đây thì sau khi chạy xong cái này nó sẽ xây dựng cho mình cái này nó tạo cho mình cái này là một cái dictionary nó chưa làm gì hết mới xử lý cái data thôi có lẽ là nó dựa vào data đang có để nó sinh ra một cái dictionary nó sinh ra một cái quyền từ điện và mỗi cái vị trí từ nó có một cái giá trị index để để sau này mình mình lấy cái index đó mình thay cho cái từ đó mình đưa vô hình Rồi có câu hỏi là vậy có option nào lấy len max chiều dài tất cả các câu? Điều này không cần thiết. Giả sử mình cho thật lớn thì cũng được nhưng mà không cần thiết"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "31:33",
+      "content": "Thật ra bây giờ các bạn xem một cái review phim thì thật ra mình chỉ cần đọc 200 từ đầu là mình đã biết được là người ta positive hay negative rồi. Mặc dù là một câu rất dài nhưng mà thông thường mình đọc câu đầu và câu cuối đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "31:47",
+      "content": "Trâm Văn viết theo kiểu, viết theo cách thông thường chọn đọc câu đầu và câu cuối thông thường câu đầu là mới vô nói luôn vấn đề ý chính là gì sau đó mấy câu sau mô tả câu cuối kết luận một lần nữa đó thôi thông thường mọi người viết như thế còn giả sử như là mọi người viết theo kiểu khác đi chăng nữa thì mình đọc từng trăm chữ đầu hay hai trăm chữ đầu được rồi đó cho nên là mình không cần thiết phải lấy hết mặc dù là mình bảo nghĩ nó mất thông tin sao mà thật ra trong thực tế như vậy là vẫn ok thì nó tùy loại bài lúc đó mình sẽ khảo sát từng loại bài mình chọn cái cách thức khác nhau Còn giả sử các bạn muốn lấy giá trị max là một câu dài nhất có thể thì dễ thôi"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "32:26",
+      "content": "Mình khảo sát data set của mình. Khi khảo sát data set đang dùng, mình xem câu nào dài nhất rồi mình chọn SQL Lens bằng cái đó. Thì cũng được thôi"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "32:33",
+      "content": "Nhưng mà SQL Lens này là thăm số cho nên câu hỏi của bạn Chín là thăm số cho nên là mình sẽ chọn Nó giống như tham số là trong Hidden Layer có bao nhiêu nốt kiểu như thế thì thật ra nó nằm ở cái ngưỡng, nó nằm trong cái khoảng nào đó thì nó không có sự thay đổi nhiều Ví dụ mình chọn 200 trong cái bài review phim lát nữa cho các bạn Cái này là cái mà Ad lấy ra để in ra thôi, các bạn chạy in ra cái này Đó thì các bạn sẽ thấy Vocabulary bài ngày hôm nay hơi nhiều nhỉ bài hôm nay cái cái file ắt gửi cho các bạn không là cũng 15 file các bạn lên các bạn ắt mới update lại hình như có 15 file bài hôm nay nó nhiều á Rồi Ý ở đây đúng không thì nó sẽ ý ra cho mình"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "33:42",
+      "content": "Cái này là cái Dictionary. Cho mình cái Dictionary như vậy. Rồi, sau khi mà mình có cái Dictionary xong thì mình xây dựng cái Dictionary xong thì mình có cái Tokenizer. Tokenizer là bên trong là nó giống như một quyền tựa điện rồi đó. Nó biết cách để tắt cái từ như thế nào đó. Là tắt cái từ theo khoảng trắng nè. Rồi sau đó trước khi tắt thì nó sẽ lowercase nè. Rồi làm gì nữa? À nếu mà nó dài hơn 5 thì cắt bớt đi bằng 5 nè. Nếu mà ngắn hơn 5 thì... Thì sao? Thì thêm button vào. Đó. Cho nên là bây giờ mình mới chạy. À chạy sẵn rồi. Coi nó có thay đổi chưa. Rồi. Vậy là sample 1. Sample 1 là cái gì? Sample 1 mang xuống đây. We are learning AI"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "34:47",
+      "content": "We are learning AI đúng không? Sample 1 nè. Add copy xuống nha. We are learning AI từ We. Quy mình tra xem nó có từ quy trong đây không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "35:04",
+      "content": "Thấy ổ không có Vậy là không có thì cứ unknown thôi Unknown đây bằng 0 Đó vậy là quy biến thành số 0 Quy là nó biến thành một cái token tên là unknown A A thì tách ra thành A Learning AI Chỗ này nó có 4 từ thôi Bây giờ mình cần 5 từ lận thì nó thêm padding vô Rồi sau đó Unknown thì bằng số 0 Padding thì bằng số 1 nè Cho nên là ở đây mình dùng cái hàm, mình dùng cái biến tokenizer mình gọi cái hàm encode Mình truyền cho một cái chuỗi là ok Cho nên là mình có cái này WeAreLearningAI tắt ra thành 4 cái token Nhưng mà cái token ở đây là mình chọn bằng 5 đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "35:56",
+      "content": "Cho nên là là ở đây khi mình tắt ra rồi, nó đếm ở đây có 4 thôi cho nên là ở đây nó sẽ thêm cái ở dưới là số 1 số 1 là ở đây là Paddling đúng không? Cho nên là Wii ở đây không có, không có cho nên chọn Unknown rồi A, A là số 4, mình chuyên số 4 gì nữa ta? Số 7 là gì? À Learning hả? Learning số 7 số 2 là AI là số 2, mình tra vô thì đúng là mình được cái này Còn câu thứ 2 AI is a CS topic Đó thì mình xem AI là số 2 đúng không AI là số 2 nè Rồi IS là cái gì? Số 6 AI số 3 CS số 5 Cuối cùng... Cuối cùng unknown hả? Cái gì unknown ta? Topic"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "37:00",
+      "content": "À, topic trong đây không có. Cho nên là topic là unknown là số 0. Rồi. Rồi là cuối cùng mình có cái đoạn code này. Đó, khi cần mình copy lại. Chỉ cần mấy cái này anh không nhớ đâu. Mình xử lý một lần. Lần đầu tiên là mình học, mình hiểu hết từng dòng như vậy. Nhưng mà mình để đó. À, nó có một cái đoạn code như thế xử lý. Sau này mình vô mình copy lại. Rồi, quay lại cái hình này. Vậy là mình cũng hiểu cái ngữ cảnh rồi đó. Là ở đây mình có các từ đi vô và mình xử lý như bước vừa rồi để nó biến cho mình 5 con số, đúng không? Rồi, câu hỏi của bạn.."
+    },
+    {
+      "name": "Speaker 1",
+      "time": "37:50",
+      "content": "Trước khi mà Ad trả lời câu hỏi của bạn Ngọc Ấn thì có câu hỏi của bạn Kim Trần. Tại sao Huy không có? Thì có bạn khác comment giùm Ad xem tại sao không có. Nếu mà các bạn biết. Tại vì các bạn thử xem suy nghĩ, thử dùng nó. Rồi câu hỏi của bạn Ngọc là nếu mình chọn câu capsize ít hơn số lượng từ thì cơ chế nào giữ lại các từ quan trọng? À cũng giống như câu hỏi của bạn Kim Trần luôn đúng không? Nó dùng sequence. Nó dùng... Xin lỗi không phải sequence mà là frequency, có nghĩa là tầng suất xuất hiện. Những từ nào mà xuất hiện nhiều thì được giữ lại. Ví dụ ở đây, cái từ AI này, các bạn thấy là lấy ngay AI này, bởi vì AI xuất hiện 2 lần"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "38:34",
+      "content": "Còn khi mà cái từ nào mà xuất hiện 1 lần với nhau mà lượt lấy trước thì giá trị mặc định thôi. Giá trị mặc định giống mình lập trình thôi"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "38:42",
+      "content": "Còn ở đây chắc là nó chọn theo kiểu alphabet hấp đoán Thế còn trong dữ liệu thật của mình Khi dữ liệu nó lớn thì toàn xuất hiện nó rất là lớn Ví dụ nó có từ cái số lượng từ mà xuất hiện một lần có những bỏ hết Xuân liện 2-3 lần, ít nhất là 3-4 lần Thông thường là ít nhất là 3, thông thường như thế Còn 2 lần là người ta đã muốn bỏ rồi Còn khi mà nó có bằng nhau hết thì giá trị mặc định thì giá trị mặc định mình dựa vào một cái cái hin nào đó, dựa vào một cái cách thức nào đó để mình Mình lấy giá trị mà đều sắp xếp những cái giá trị mà nó ngang hàng với nhau thì chắc là Alphabet thôi"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "39:16",
+      "content": "Rồi thì ngày hôm nay chúng ta học cơ bản thôi nha. Nó có một cái buổi mà TA Thái sẽ thảo luận với các bạn là một buổi trong đó chỉ chuyên về Tokenizer thôi. Một buổi khác chuyên về Embedding. Bởi vì hai cái đó là hai cái chủ đề nghiên cứu luôn. TA Thái nghiên cứu chuyên sâu về hai cái đó. Đó thì lúc đó nó có rất nhiều thứ để bàn. Còn ngày hôm nay là mình học tầm quát và hướng đến Transformer. Rồi. Vậy là ok rồi đúng không? Ok tới khúc này rồi đúng không? Đó, vậy là trong đầu mình đang có cái gì? Trong đầu mình bảo ok. We are learning AI. Lại nha, lại. We đâu? We không có. Unknown số 0. A. A là gì đây? Số 4. Learning số 7. AI số 2. Số 1. Thiếu"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "40:07",
+      "content": "Tại sao vậy"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "40:07",
+      "content": "Bởi vì mình yêu cầu cái Sequence Lens mà ở đây có 4 từ thôi nên là phải thêm cái nữa padding số 1 thông thường người ta chọn padding sau các bạn phía trước phía sau cũng không ảnh hưởng gì đâu à chào trước thông tin như thế sau này các bạn test thì nó cũng không ảnh hưởng gì đâu nó ảnh hưởng xíu xíu thôi dạng như là mình dùng hidden layer với 100 nốt với 200 nốt tựa kiểu vậy rồi bây giờ mình có mình có 5 từ này rồi Vậy là bây giờ mình đứng ở kế cạnh là mô hình nhé Mô hình cứ nhận vô 5 con số Thì 5 con số này mô hình không quan tâm là batting hay là unknown hay là gì Unknown nó cũng là một từ, batting nó cũng là một từ Bây giờ các bạn hiểu đưa vô 5 con số Vậy thì đưa vô 5 con số này Mình sẽ dựa vào 5 con số này để đưa ra một quyết định Thì thật ra các bạn nghĩ xem là 5 con số này khó biểu diễn lắm Nó khó biểu diễn về mặt các công cụ toán học Giả sử bây giờ mình chỉ dựa vào những con số này thôi để đưa ra quyết định là một cái comment nó có tốt hay không nó có positive hay negative thì nó giống như những cái bài thống kê thông thường là mình thống kê xem là ví dụ như là cái từ index số 2, số 7 là những cái từ negative nếu mà nó chứa những cái từ negative thì kết luận nó là negative kiểu kiểu như vậy hoặc là số 4 thì nó là positive, vậy chứa nhiều số 4 hơn số 2 với số 7 thì nó là positive"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "41:38",
+      "content": "Ví dụ thế, nếu mà mình chỉ mô tả bằng một con số này thôi thì chắc mình chỉ làm được những cái bài chuyển thống kê thôi. Bây giờ mình muốn làm việc với mô hình hay là làm việc với cosine, cvt, tích vô hướng, kiểu như thế, mình phải biểu diễn nó thành một vector. Nói chung là mình mà biểu diễn dạng như vậy thì cái cách biểu diễn này Rất là khó để xử lý phía sau. Cái cách biểu diễn này nó không đem lại thông tin. Đó cho nên là người ta mới suy nghĩ mới đây thôi nha các bạn. Chứ không phải là xưa đâu. Ad đưa ra một cái lag cách mà dùng ePadding là mới đây thôi"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "42:16",
+      "content": "Là người ta tạo ra một cái cách thức là, ồ, vậy là bây giờ thay vì mình dùng một con số, có phải tất cả con số này đang nằm trên một chục OS đúng không? Một chục OS. Vậy thì mình chứa một chục x thì rất khó để phân loại"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "42:33",
+      "content": "Ví dụ mình có dữ liệu 0,0, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x mà 2 chiều cũng được 2 chiều cho nó nhìn mặt thẳng được là mà cái dữ liệu 00 được đẩy lên cao SS được đẩy xuống dưới 00 được đẩy lên cao SS dưới này được đẩy xuống dưới đó vậy là chỉ cần một cái đường thẳng này thôi đó có thể phân biệt được đó có nghĩa là giả sử mình mình đang chuyển đổi 1 chiều 1 dữ liệu 1 chiều thành dữ liệu 2 chiều vậy thì những cái điểm Cái hình này không phải liên quan đến Embedding đâu"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "43:33",
+      "content": "Nhưng mà Ad lấy từ cái kernel, nhưng mà Ad quan sát, Ad thấy nó tương tự. Đó có nghĩa là thay vì mình cần phải học một cái mô đô mà nó vẽ được cái đường này nó phức tạp lắm"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "43:47",
+      "content": "Tại vì những cái đường căng mà nó kiểu kiểu như vậy Học rất là khó mà nó phức tạp tình hình Giả sử như là có một cách thức nào đó mà mình xử lý data Mà data của mình đang 2 chiều nó biến thành 3 chiều như vậy Vậy thì cuối cùng mình có một mặt phẳng Mặt phẳng này chính là cái bài linear regression cái gì Mình dùng chỉ cần linear regression là mình xử lý được rồi Vậy là giả sử mình chuyển đổi được như thế Thì lúc này lúc này là cái cách mà nâng cao cái dimension nâng cao cái chiều nó có tác dụng như vậy cái thứ hai là khi mà chúng ta làm việc với các con số đây là các con số thì thì rõ ràng từ xưa nay trong làm việc với các con số mà liên quan đến đạo hàm mà làm kiểu số vậy là chắc chắn là không tốt rồi mình phải chuyển thành con số lẻ nó smooth thì lúc đó chạy nó mới mượt đi còn mình làm theo kiểu vậy nó giống như trong một không gian rời rạc số rời rạc như vậy thì thông thường mọi người sẽ tìm cách mình làm mịn nó dụ như ảnh trong ảnh người ta đưa về 0,1 chẳng hạn làm mịn nó cho nó dễ làm việc kiểu vậy thì cái mục tiêu chính của nó là để biểu diễn tốt hơn vậy câu hỏi đặt ra làm sao biểu diễn như thế nào là tốt nhất nó có một cái lĩnh vực toán học gọi là kernel method là cách thức mà để nâng số chiều lên Nó dùng gau sân, dùng tảng học để mình không hiệu quả được Nhưng mà bây giờ người ta đặt ra là cái phương pháp nào là tốt nhất Vậy thì câu trả lời đó là phương pháp tốt nhất là phương pháp mà nó tự học mà phù hợp nhất với data đó Cho nên nó làm như sau Ở đây có 1, 2, 3, 4, 5, 6, 7, 8 Ở đây có 8 từ ở đây mình có hiểu là một từ luôn có 8 từ khác nhau và mỗi từ nó tương ứng một con số chạy từ 0 đến 7 thay vì mình đưa những con số này trực tiếp vô mô hình nó không hiệu quả bởi vì nó biểu diễn một cách quá thâu sơ không biểu diễn tốt không biểu diễn hết được thông tin dữ liệu thì lúc này mỗi con số nó sẽ tương ứng với một vector có độ dài là một tham số cho mình quy định nó gọi là độ dài này là bằng 4 nè và nguyên cái cục này nó gọi là embedding là cái cách thức mà mình chuyển đổi từ một từ sang một vector mà các con số này nó thay đổi trong quá trình training và mình chọn tham số bằng 4 cho nên là ở đây mình có 4 con số Cái chỗ này mình phải gọi là Embedding Dim Embedding Độ Dài Embedding Dimension Đây là một bằng 4 Ở đây là bằng 8 tại sao vậy"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "46:44",
+      "content": "Bởi vì ở đây mình có 8 từ Mỗi từ nó sẽ tương ứng với một dòng Vậy thì điều này có ý nghĩa là gì? Chỗ này thay vì mình đưa số 0 vô thì mình hãy lấy cái dòng này, mình lấy cái vector này mình đưa vô mô hình. Vậy là các bạn tưởng tượng là cái từ số 0 nó là một cái điểm, nó là một cái điểm trong không gian 4 chiều, các bạn có hiểu trong không gian 3 chiều, là một cái điểm nằm đây. Và số 4, mình đưa vô số 4, số 4 với số 7, số 2, số 1 là những cái điểm ngẫu nhiên, tại vì ban đầu cái trọng số nằm trong cái embedding này nó là ngẫu nhiên, khởi tạo ngẫu nhiên theo Gaussian 0.1. Normal, 0, 1. Khởi tạp ngẫu nhiên"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "47:36",
+      "content": "Vậy là nó sẽ nằm ngẫu nhiên trong khung gian 3 chiều. Giả sử đây mình cho Input đi bằng 3. Nó ngẫu nhiên. Vậy thì khi mà nó ngẫu nhiên vầy, ngẫu nhiên. Sau đó, mình trong quá trình huấn luyện mình kéo hàm loss xuống. Vậy thì những cái từ này nó sẽ thay đổi những cái trọng số trong cái Input đinh này nè. Những cái biểu diễn của cái từ này nó sẽ thay đổi. Vậy là những cái từ này nó sẽ dịch chuyển trong không gian. Và nó dịch chuyển như thế nào đó để hàm lót dàn xuống. Vậy thì do hàm lót thôi. Nghe thì nó rất chiều tượng. Nhưng mà bây giờ ảnh nói hàm lót là hàm quy định. Mục tiêu của bài toán của mình là đi.."
+    },
+    {
+      "name": "Speaker 1",
+      "time": "48:23",
+      "content": "Mục tiêu của bài toán của mình là mình sẽ dùng Cosine Similarity để mình maximize những vector với nhau. Ví dụ ở đây mình có, mình đưa vô các từ, sau đó mình lấy các từ, mỗi từ là một vector nha các bạn. Mình lấy các từ, mình tính Cosine Similarity. Sau đó mình maximize cái giá trị tích vô hướng. Cosine CVT chẳng quen là Normalize tích vô hướng thôi. Mình nói tích vô hướng cho đơn giản, đot có đặt. Mình Maximize giá trị đó hoặc là nó sẽ kéo xuống thì mình lấy giá trị ngược đảo. Đó, mình đi Minimize giá trị ngược đảo của tích vô hướng. Hoặc là mình nói là mình đẩy giá trị tích vô hướng lên. Vậy thì lúc này các từ này nó dịch chuyển sao"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "49:10",
+      "content": "Các từ tích vô hướng mà nó muốn giá trị lớn nhất thì khi nào các bạn? Cho 2 từ trong không gian nó có thể dịch chuyển. Vậy thì nó sẽ dịch chuyển như thế nào để tổ yêu hàm lót, hàm lót ở đây là tổ yêu là nó sẽ maximize cho chị tích vô hướng và hai từ này nó sẽ xa nhau hay nó gần nhau các bạn suy nghĩ thử xem các bạn dựa vào cái ý nghĩa của tích vô hướng các bạn suy nghĩ xem hai từ này nó sẽ nó sẽ cùng hướng hay là nó khác hướng một từ nằm phía này, một từ nằm phía này hay là hai từ cùng một phía các bạn suy nghĩ thử xem cùng hướng đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "49:50",
+      "content": "Tại vì trong tích vô hướng trong Cosine Sinuity chạy từ 1 đến 1 chẳng qua chuyện là nó tích vô hướng, nó chia cho phần mẫu ở dưới khi bằng 1, khi 2 cái này nó cùng hướng cái góc nó bằng 0, đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "50:08",
+      "content": "Cho nên là lúc này cái Hamlots của mình nó quy định cái gì đó thì những từ nó dịch chuyển để nó thỏa mãn cái Hamlots vậy thì bây giờ Hamlots của mình nó sẽ yêu cầu là OK mô hình này hãy đưa ra quyết định đúng hãy ánh xạ dữ liệu tự ích sân ý Có nghĩa là với cái text này thì nó là positive Với cái text này là negative Với cái text khác thì positive Vậy thì hãy làm đúng với data này đi Vậy thì cái từ này nó sẽ dịch chuyển sao cho đúng Thì thông thường khi nó dịch chuyển sao cho đúng thì thông thường nó sẽ Những cái từ mà nó có cùng ý nghĩa nó sẽ gần nhau Và những cái từ nào nó không liên quan nó sẽ phân cụp các từ Những từ nào mà đồng nghĩa gì đó nó sẽ gần gần nhau Rồi những cái từ đồng nghĩa khác nó gần gần nhau Còn hai cái từ khác nghĩa hoàn toàn thì nó nằm xa nhau Thông thường như vậy Cho nên là sau này thậm chí là chúng ta dùng một cái embedding mà đã được truyền sẵn rồi, còn ở đây chúng ta truyền lại từ nào"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "51:00",
+      "content": "Rồi. Có câu hỏi bạn Hoàng là vocab size lấy từ Tokenizer. Vocab size mình chọn chứ. Mình chọn vocab size. Trong data của mình, giả sử mình có rất nhiều từ. Nhưng như Ad nói, trong tiếng Anh mình chỉ cần nhớ 5 ngàn từ thôi. Cho nên mình chọn vô capsize là quản lý 5 ngàn từ thôi. Tất cả những từ nào không liên quan đến 5 ngàn từ đó mình kêu unnote hết. Rồi. Cho nên cái khúc này nè. Khúc này nó hơi chiều tượng. Khúc này mình phải làm một thời gian, nghĩ một thời gian mình mới có làm qua rồi cắt rồi chắc. Thì mình mới hiểu hết vấn đề"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "51:38",
+      "content": "Nhưng mà ở đây Ad sẽ giải thích cho các bạn là là những con số như là 0, 4, 7, 21 chỗ này nó là khủ đựng Các con số khủ đựng này mà mình đưa vô mô hình bảo hãy dựa vào các con số này để quyết đựng đi thì mô hình nó sẽ cố gắng làm cái bài toàn thông kê thôi chứ nó không hơn được Nhưng mà người ta nghĩ ra được cái cách này là lúc này mỗi từ nó sẽ là một cái điểm cho không gian và cái điểm này có thể diệt chuyển Và sau này người ta sẽ đánh giá những cái điểm đó dựa vào cái gấp cái gắc với 2 điểm chính là tích vô hướng đó và lúc này giả sử như là mình làm cái bài tần số chẳng hạn những cái từ mà nó giống nhau những cái từ mà liên quan đến cái phần positive nó nằm dồn vào phía những cái từ nào liên quan đến negative nó dồn vào phía cho nên là trong một cái câu mà nó nhiều cái từ positive quá thì lúc này cái giá trị gắc nó lớn cái giá trị gắc nó lớn thì thì nó dựa vào thông số đó, nó có thể rút ra thông tin gì đó, đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "52:49",
+      "content": "Rồi. OK. Vậy là ở đây là thay vì có 2 lý do. Lý do 1 cách siêu tượng là mình sẽ đẩy dạng sử dạng sử như là cái embedding đã được truyền tốt rồi. Đó thì mình tưởng tượng. Mục tiêu của cái phần tăng số chiều lên là như chỗ này Mặc dù là cái của mình nó sẽ thay đổi trong quá trình tuning Nhưng mà nó thay đổi để tốt nhất cho một loại data Chứ mình không chọn một cái có sẵn Một cái có sẵn nó chỉ tốt cho đúng một cái ví dụ đó Nó giống như là năm trước Ad có làm một cái bài thí nghiệm tại sao CNN là tốt thì trong cái kernel của CNN nó sẽ lấy những feature ra"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "53:39",
+      "content": "Nhưng mà trong xử lý ảnh là người ta có cả trăm cái loại, các thức khác nhau để lấy cái feature từ một ảnh, lấy cặn, lấy gấp, lấy theo kiểu này, kiểu kia, loco body pattern, loco story pattern, nhiều thứ. Cả trăm cái. Thì Ad lấy bằng đó thử. Ad lấy những cái truyền thống. Ad làm mà Ad so sánh với những cái CNN được tự học. Thì CNN nó chạy tốt hơn. Trong cùng một ngưỡng cảnh luôn. Tại sao nó như thế? Bởi vì CNN chính là một tổng quát, nó là một cơ nô tổng quát của những thành phần kia. Thì ở đây cũng thế. Ở đây cái cách thức là embedding nó tự học, nó tự biểu diễn"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "54:17",
+      "content": "Và cái cách thức tự biểu diễn, tự học đó nó là cái cách thức tổng quát của tất cả các method đang có. Tất cả các method đang có nó sẽ phụ thuộc vào một ông kỹ sư nào đó. Ông ấy nhìn góc này, nhìn góc kia. Với ví dụ này thì nên làm như vậy Còn ông kỹ sư khác nhìn vô góc này góc kia Với ví dụ khác thì làm như thế này cho nó tốt hơn Thì đúng là nó tốt hơn thật Nhưng mà nó tốt hơn đúng trong ngữ cảnh đó thôi Còn bây giờ xếp với một dữ liệu lớn Và một dữ liệu bất kỳ thì cái nào tối ưu"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "54:49",
+      "content": "Chính là cách học để dẹm hầm lót xuống đó chính là cách thức tối ưu Cho nên là ở đây thay vì mình đưa 4, 5 con số này đưa vô mô hình thì không mình sẽ tạo ra một cái tên là Embedding này cứ mỗi từ nó tương ứng với một vector có độ dài bằng 4 bởi vì đây là tham số còn cái này số 8 này là lấy ở đây ra, lấy qua đây đó vậy ở đây ở đây là mình lấy 0 đúng không còn số 1 lấy đây, lấy dòng này đưa vào và trong quá trình Huấn luyện thì những con số trong embedding này nó sẽ thay đổi. Giả sử bên sau nó còn có gì nhé. Thì mình chưa học tới, mình chưa bàn"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "55:36",
+      "content": "Nhưng mà sau một lần update thì cái từ learning này từ learning là số 4 ở cái dòng index bằng 4 này. Bằng 4, thì nó thay đổi. Thì Ad chỉ in ra mỗi cái này thôi. Ad không nói phía sau. Nhưng mà ý Ad muốn nhấn mạnh là đây là 30 số nhé các bạn. Ở đây Ad có đưa cái code này về, các bạn xem thử. Ở đây là mình có 8, 4. Đó là tất cả mình có 32 tham số. Cái này nó không có BIOS gì đâu. Cái này là cái để ảnh xạ thôi. Thay vì mình đưa con số 0 vô mô hình, thì mình đưa cái dòng này vào mô hình. Còn số 4 này là tham số, mình có thể để số 10. Cũng được. Số 10 nó hơi dài hả? Hết để số 7 nữa nha"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "56:45",
+      "content": "Rồi, số 5 đi. Thì cứ mỗi con số, thay vì mình dùng một con số đưa vô mô hình thì mình đưa một vector có độ dài bằng 5, có số chiều là bằng 5. Thì thông thường người ta chọn này bằng 64 chẳng hạn. Chọn 64 là 52 tùy mình cũng không cần thiết phải để nhỏ quá bởi vì bây giờ mình cứ hiểu là ok cái card GPU của mình nó có bộ nhớ tốt thì mình cứ đẩy mấy cái này lên mình quan tâm đến độ chính xác sau này giả sử mình quan tâm đến cái phần mô hình tối ưu số lượng tham số nó xuống thì mình giảm theo một cách thức nào đó hoặc là mình tính sau"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "57:32",
+      "content": "Ngoàn đầu mình cứ để 52 để cho đảm bảo cái capacity nó đủ rồi Rồi sau đó quay lại chỗ này để là 4 đúng không 4 cho nó ngắn gọn nè Rồi giả sử mình có một cái dữ liệu có 5 con số là 0 là thay vì mình được số 0 vô mô hình thay vì được số 4, số 6, số 1, số 0 vô mô hình thì mình lấy cái imbed này nè imbed trên này nha đúng không mình đưa cái input này vô Input, thì cái input này nó sẽ biến đổi 5 con số này thành 5 cái vector. Vậy là mình thấy cái số 0 nè, chừ 0.6170, bởi vì mình có 2 cái 0 ở trên và dưới nè"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "58:39",
+      "content": "Nó là thay vì mình đưa số 0 vô mô hình thì mình đưa cái vector tương ứng vô mô hình. Đó. Và cái thú vị là nó tự động trong quá trình truyền điểm. Cái cách thức này nó mới ra trong thời điểm deep learning thôi chứ còn trước đó người ta chưa nghĩ ra. Bởi vì lúc này cộng đồng nó đông hơn. Thì đông hơn thì có nhiều người họ thông minh họ nhìn ra vấn đề. Rồi. Vậy là mình đã làm được tới đâu rồi"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "59:12",
+      "content": "Đầu tiên là mình xây dựng một dictionary này Thay vì mình đưa các từ vô thì mình đưa các con số vô Ví dụ thay vì mình đưa là learning AI vào thì mình đưa các con số vào và mình thêm cái padding ở dưới Nhưng mà thay vì mình đưa cái này trực tiếp vô mô hình không Mình chuyển đổi nó thành mình lấy các vector tương ứng Vòng 0, lấy tự ứng ra. Và vòng 1 ở đây, lấy ra. Vậy là mình sẽ lấy cái này vô mô hình. Các bạn để ý ở đây là mình có Sequence Length. Sequence Length bằng 5. Vậy là cái shape chỗ này nó sẽ là 5. 1, 2, 3, 4. 5, 4. 5, 4 nha các bạn. 5, 4"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:00:05",
+      "content": "Nó là một sample các bạn nhớ để ý khúc này mình dễ lộn với hình 54 là ở đây là mình hiểu là ở đây mình nhập nhập trong đầu là đây mình có 5 từ 5 từ đi vô và mỗi từ được biểu diễn bằng một vector có 4 con số đó là 54 là biểu diễn trong một cái text một cái text và mình dựa vào cái text này mình đưa ra một cái định là là như thế nào đó đó và mỗi mỗi từ Mỗi từ ở đây là khi mà mình dùng Tokenizer thì nó gọi là 1 token Mỗi token ở đây tư ứng 1 từ Mỗi token được biểu diễn bằng 1 vector có độ dài bằng 4 con số Ok các bạn, ok tới đây chưa"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:00:51",
+      "content": "Các bạn ok đến khúc này nha, tức là ở đây mình làm cái bước Các bạn gõ em add ok hay chưa nha? Cái này chính là bước pre-processing này Cái này là bước dùng embedding. Rồi các bạn khác ok không? Bạn nào không ok thì đặt câu hỏi. Bạn nào hỏi là giả sử đối với tiếng Việt thì nên bỏ công làm cái word segment có thể tắt ra thành từ có ý nghĩa tiếng Việt. Cô giáo đi học. Ok. Nó có nhiều cách lắm. Ok. Rồi bây giờ mình cứ tắt thành từ từ trước. Rồi các bạn ok là coi như là cũng cơ bản là cũng xong cái phần bài text rồi đó"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:01:34",
+      "content": "Vậy là ở đây mình hiểu là ở đây mình đang có một cái shape là 5 4 5 4 Rồi Bây giờ mình có 5 4 có nghĩa là mình hiểu ở đây là mình có 20 thêm số và mình đang muốn làm cái bài toán phân loại nhị phân Vậy thì cách đơn giản nhất là như sau Add Flatten, kéo dài nó ra thành cái này, Flatten Sau đó Khi Flatten rồi thì muốn làm cái bài nhị phân thì thôi mình nối với một nốt thôi Phân loại nhị phân đúng không? Mình lấy một nốt thôi Nối một nốt, mình dùng Sigma hoặc là nối với hai nốt mình dùng Sopma Đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:02:26",
+      "content": "Đó Nó vậy thôi, cho nên là cuối cùng các bạn thấy, ồ cái bài text này nó khác với cái bài khác nó chỉ khúc này thôi, còn nguyên khúc dưới này các bạn làm cái gì cũng được Với dữ liệu text nó chỉ đúng khúc này, còn khi mà đến khúc này rồi nha các bạn xem đây là data xem này là tensor và có thể dùng tất cả những kinh thức mình có áp dụng cho cái dữ liệu tensor này Ngay cả Scene End. Scene End, cái này các bạn hiểu là chiều rộng nè. Width bằng 5 và Channel bằng 4. Width bằng 5, Channel bằng 4, chiều cao bằng 1. Đó, chiều cao bằng 1. Thì hoàn toàn mình có thể dùng cái Convolution 3. Convolution 1 x 3. 1 x 3 là chiều cao bằng 1, chiều rộng bằng 3"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:03:21",
+      "content": "Sau đó nó trượt. Nó trượt trên cái này là chiều cao, chiều rộng bằng 5 và Channel bằng 4 nè"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:03:28",
+      "content": "Nó trượt, bằng 3 nó trượt qua đây, nó trượt qua đây, nó trượt qua đây rồi có hỏi của bạn HKB là thấy vẫn giống Multilasks trong nhưng thay vì đưa vào model1.htj thì mình đưa vào model1.vector, ok đúng rồi đó đó rồi bây giờ mình làm bài này thử nha thì trước khi mà add code bài này với các bạn thì add làm ví dụ đã Khi mà các bạn hiểu bài này rồi thì thật ra Transformer thì các bạn cứ hiểu nó là một cách thức mới thôi Nó tổng hợp dữ liệu thôi Thay vì mình dùng multi-layer subsystem thì chúng ta có thể dùng ANN Thay vì dùng ANN thì chúng ta có thể dùng CNN1D Thay vì dùng những cái đó thì chúng ta có thể dùng Transformer Nó chỉ là cái cách thức tổng hợp các nhau Giống như là thay vì mình mình đang cần cơ bản là mình đang cần một cái động cơ động cơ để nó quay động cơ để nó xoay cái trục đó thì chúng ta có thể mua một cái máy của Honda một cái máy của Suzuki các máy khác nhau mỗi máy thì nó có chất lượng khác nhau tùy vào giá tiền vậy thôi chứ còn nó cũng có mục đích là tổng hợp thông tin hết bây giờ mình làm cách thức đơn giản nhất làm từng bước nha cậy ông đập lưng ông là một cái câu mà giống như là mình Mình cười chê cái người đó cho kiểu như thế"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:05:00",
+      "content": "Thì cho label bằng 0. Còn có lèm thì mới có ăn. Là một câu khuyên răng. Khuyên là OK. Đó, mình khuyên. Ở đây thì chia là OK. À, câu này có vẻ là cái hành động đó nó là negative. Còn câu này là câu khuyên. Ví dụ, anh bác chia ra 2 loại như thế. Đoạn loại như thế. Rồi. Bây giờ mình chọn cái này tham số nha. Mình chọn là vocab size bằng 8 và sequence length bằng 5 cho mình chọn. Vậy thì sau khi mình chọn xong thì nó ra cho mình cái vocab, cái dictionary là giống như vậy. Sau đó mình bảo ok gậy, ông đập lưng ông gậy số 4. Ông, ông chỗ nào đâu? Có ông không? Có. Số 3"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:05:53",
+      "content": "Đập là đây không có đúng không cho nên là unknown số 0 tương tự như thế lưng ông số 3 đó và có làm mới có ăn thì cái này không cần padding bởi vì 2 câu nó chọn là 5 luôn cho cái ví dụ đó đơn giản Đó và bước 1 re-processing Bước 2 Emitting đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:06:19",
+      "content": "Đó thì chỗ này mình tham số mình tạo ra một cái tham số là tạo ra một cái embedding mà nó có 8 vòng và 2 cột Vậy là thay vì mình lấy số 4 đưa vô mô hình thì mình lấy cái vector này đưa vô mô hình Lấy cái này đưa vô mô hình Vậy là đi qua cái này Vậy là dữ liệu của mình là mình có chỗ này là 5 phải là có 5 con số và đi qua đây là 5,2 52 cho nên là các bạn hiểu, cái này là embedding đi qua đây thì nó chạy vào cho mình cái dữ liệu là 52 đây mình hiểu là 1 cái SQL có 5 token và mỗi token được biểu diễn bằng 1 vector có 2 con số sau đó mình nối với mình muốn làm bài tánh phân loại nhị phân đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:07:06",
+      "content": "Mình dùng 1 node rồi dùng sigmoid hoặc dùng 2 node mình dùng softmax đây dùng 2 node mình đang có cái chỗ này thôi mình mình làm cách đơn giản nhất đi đó là flatten đó đây là flatten vậy là đây mình có 10 con số đúng không? 5,2 mà 5,2 flatten là 10 con số 10 con số này mình nối nối vô với 2 nốt và chính là linear 12 vậy thôi rồi softmax mình dùng loss là gross entropy loss rồi Optimize, giờ mình chọn cái nào đó. Rồi, add làm tiếp luôn. Vậy đây là mình có linear 12 đúng không? Vậy thì đại loại là mình sẽ có một cái nốt này nó nối với 10 cái nốt đây, cộng thêm một cái bias nữa. Vậy là mình có tất cả là 11 tham số"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:08:10",
+      "content": "Vậy là với 11 tham số thì mình sẽ xuân được z1. Và với 11 tham số khác thì mình tính được tương ứng z0 và z1. Đó thì add in là cái tham số luôn Add code từng bước Trong mấy cái code add gửi cho các bạn thì nó có mấy cái phần đó Vậy là với 11 tham số nè Là mình tính được z0 Và với 11 con số khác Tính được z1 Rồi sau đó mình tính swap max để tính được giá trị xác suất Hai này cộng lại Thì bằng 1, cái này để 72 làm tròn lên 72 cho nó cho nó tròn số Rồi Vậy thì sau đó mình tính loss, mình tính loss được 1.25 là giá trị trừ lóc, cái này là bằng 0 đúng không? Câu này là câu gãy on đập nước on đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:09:03",
+      "content": "Thì nó chính là 0.28, giá trị là 1.25, y bằng 0. Sau đó mới hát dùng cái này thôi, đơn giản, đây là bài demo đó mà, bài ví dụ để tính tay cho nên là dùng nẹn được cho mình dễ nhậm với lương nữa đây 0.1 thì mình thấy update cái chỗ này nó sẽ trả về cho mình quay lại slide nha chỗ này là 82 này update xong thành 99 là chỗ này thành 93 82 đó thì nó xuống những con số khác thì ở đây cái giá trị tham số nó sẽ Những tham số trong Embedding sẽ thay đổi và những tham số trong cái này cũng thay đổi luôn. Hai cái này thay đổi, trong cái Linear thay đổi là chuyện đương dễ hiểu rồi. Nhưng mà trong cái Embedding thay đổi là một cái mới"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:10:01",
+      "content": "Cứ gọi là những cái từ này nó sẽ dịch chuyển. Dịch chuyển để sao cho nó phù hợp với cái bài tỏa năng set thôi. Để nó giảm cái Hamlots xuống"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:10:15",
+      "content": "Thì tùy vào cái phía sau mà nó có dùng cái gì đó như là TIPO hướng hay là DISTANCE lúc đó DISTANCE L1, L2 gì đó thì lúc này nó sẽ dịch chuyển tư ứng Rồi Đó thì chúng ta thấy khi mà TRAIN thì giá trị LOG nó giảm Cho nên là cái quá trình hoạt động là thấy ok rồi đó Nó cứ chạy theo cái luồng như vậy Đó và chúng ta lại đưa cái sample tiếp theo cho chúng ta vô Cứ TRAIN như thế, TRAIN một hồi thì 2 2 cái này mô hình nó học được và các giá trị tham số nó học được Rồi sau khi học xong mà làm kỹ hơn cái này nếu mà Ad có thêm thời gian Ad sẽ plot cái điểm này lên Thì mình sẽ thấy những cái từ này nó phân bố trong không gian nó phân bố sao để Ad làm thêm phần này Rồi Đến phần code Chỗ này ad cho embedding ở đây là bằng 14 Vậy là xác xinh là 10 dòng và mỗi dòng có 4 cột chứng minh ở khía cạnh khác cho các bạn thấy là số lượng tham số của mình nó có 40 tham số bởi vì nó có 10 dòng và 4 cột vậy là tất cả nó có 40 tham số đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:11:53",
+      "content": "Nó không liên quan đến bias ở đây chỗ này nó không phải là lớp linear chẳng qua là thay vì mình đưa con số vô thì mình lấy một cái dòng tự ứng mình đưa vào ý là như vậy rồi rồi đây là cái đoạn code mà mà mình cài đặt cái bài Text Classification dùng cực kỳ đơn giản luôn để cho các bạn thấy cái luồng đơn giản sau khi mà thấy cái luồng đơn giản xong thì mình hiểu được à Transformer nó là một cái công cụ thay vì mình dùng Multi Layout Shop trong thì mình dùng Transformer thôi đó thì lúc đó mình hiểu được à mình đặt Transformer vô cái vị trí nào trong cái bài này và mình thấy là ở khía cạnh ít nhất là giả sử mình chưa hiểu hết Transformer mà mình biết là vì sao mình lại cần nó rồi Ở đây mình có data đúng không và sau đó nguyên cái đoạn code này là cái đoạn code mà mình chuyển đổi các từ thành các con số Và sau khi mình chuyển xong là ví dụ câu này là gậy ông đập lưng ông thì nó sinh ra con số gì đó các bạn về các bạn đọc kỹ hơn có làm thể mới của anh nó sinh ra một các con số Rồi sau đó Ad tạo mô hình ban đầu đưa vô Emitting đưa vô Embedding có vocab size là bằng 8 ad kéo lên nha ad kéo lên là bằng 8 nè sequence length bằng 5 đó ad sẽ ad lấy cái này input x bằng 5 từ đúng không ad test với các bạn cái này Đưa mô hình vào"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:14:02",
+      "content": "Summary lấy này. Lấy hết sửa đài luôn. Chỗ này nó xin cho mình các con số chạy từ 0 đến 9. Giống như là cái từ Thay vì Ad đưa từ vô thì Ad lấy cụ thể là... Là cái gì luôn? Tức là cụ thể lấy các con số luôn Và đây là 5 từ Rồi, cái này là vô cap size bằng 8 đúng không? Chắc Ad để đây bằng 8 để anh xin các con số từ 0 đến 7 Rồi sau đó mình đưa cái này vô xem chạy được không nha Đợi Ad xíu 1,2,3,4,5 1,2,3,4,5 Input Mô hình AsciiLayer Platinum Rồi ToxInfo này nhiều lúc để xem thử Phải xây dựng kiểu class này qua. Đợi add-in kiểu này nha. Xem nó có ra tham số không. Print model Rồi"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:16:00",
+      "content": "Câu hỏi của Ad đó là bây giờ mình đọc vô cái mô hình này lát nữa mình sẽ tìm một đoạn code để xin ra các tham số bây giờ mình sẽ thảo luận mình cộng lấy cái chung của các bạn mô hình này có bao nhiêu tham số? Các bạn nhầm dùm ad chỗ này là vô cap size bằng 8 vô cap size bằng 8 nghĩa là gì? Là đầu tiên là mình có 5 con số mình đưa vô embedding thì nó sẽ sinh ra cho mình một cái shape là 52 đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:16:42",
+      "content": "Đó cái shape chỗ này, aboot sẽ là 52 Các bạn nhớ có câu trả lời gõ trong ad nha là toàn bộ cái mô hình này có bao nhiêu thăm số sau đó mình flatten ra 10 nốt và mình đưa qua cái linear là từ 10 sang 2 Đó, vậy là output của chỗ này nó sẽ là 2,5. Rồi, sau đó mình mới đi qua, mình bỏ vô hàm cross entropy thì trong đó nó có shock mark luôn rồi. Thì việc tính thôi. Đó, vậy các bạn suy nghĩ cho má xem là cái này nó có bao nhiêu thêm số. Mô hình của mình nè, ban đầu mình có embedding nè. Rồi, sau đó mình flatten. Rồi sau đó mình đưa vô classifier. Có 2 câu trả lời 30, 31 các bạn khác. Nhầm nhầm ad. Đây, đúng không? Và cái chỗ này"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:17:50",
+      "content": "Mình nhìn vô cái hình này cũng đoán ra được. Để ad nhầm coi. 30, 31 có vẻ là chưa hợp lý nha. Ở đây mình có mình có bao nhiêu? 8 x 2 8 x 2 code này tự ứng với ví dụ này đúng không? Đúng rồi code này tự ứng với ví dụ này 8 x 2 là 16 8 x 2, 16 cộng với 22 đúng không? 16,22 là bằng nhiêu? 16,22 là bằng 30 mấy rồi đó, không phải 30,31 đâu. Ở đây linear là mình chuyển từ 10 sang 2 nè. Đúng không? Ad có ghi sai chỗ nào hả? 38 đúng không? 16,22,38"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:19:02",
+      "content": "VocabSize bằng 8 VocabSize bằng 8 Cái này là cài đặt mà các bạn vừa nhìn thấy VocabSize bằng 8 Vậy là tổng số lần thăm số bằng 36 Rồi, ok các bạn, mình rất dễ lộn với SQL LEN, VocabSize, embedding name Bài này nó không khó mà ban đầu mình lộn Cho nên là lúc này mình hình dung là lúc sau mình có 5.2, 5.2 nghĩa là ở đây mình có 5 từ, mỗi từ được biểu diễn vào 1 vector có 2 tầng số. Rồi, tiếp tục. Mình sẽ thảo luận 1 cái mà chúng ta đã thảo luận, chúng ta học nhiều rồi mà nhiều khi chúng ta chưa nhận ra. Đó là linear"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:20:01",
+      "content": "Rồi Các bạn nhìn vô mô hình này Các bạn đọc code cho Ad nhé Mình có cái Fully Connected thứ nhất chuyển từ 5 con số sang 4 con số Rồi sau đó mình có Fully Connected thứ 2 chuyển từ 4 con số sang 3 con số Sau đó Ad có Us là Input là 32 Sample Mỗi Sample là Vector có 5 con số Sau khi đưa vô mô hình Mô hình của mình nó có cái Shape là có phải là 5 biến đổi thành 4 4 biến đổi thành 3 vậy là cuối cùng nó ra 32 3 đúng không? Vậy là mô hình này có bao nhiêu tham số các bạn? Bạn nhầm xem mô hình này có bao nhiêu tham số? Là 46, 24 và 35, 15 Đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:20:54",
+      "content": "Các bạn nhầm xem nó sẽ ra 24 với 15 là 39 tham số Rồi cái này mình học nhiều rồi chẳng có gì phải đặc biệt Nhưng mà bây giờ giả sử Ad làm vậy Ad lấy 9 cái mô hình này mình vừa làm luôn Lấy 9 cái mô hình ở trên này thôi chứ không phải mô hình nào khác Mô hình mà chuyển đổi từ 5 con số xuống 4 con số 4 con số thành 3 con số mà nó có 39 tổng nó có 39 tham số đó Lấy 9 mô hình đó chứ không phải tạo cái mới Nhưng mà input là Ad tạo ra như vầy 32 có nghĩa là ở đây mình hiểu mình có Có gì ta? 32 hả? 32, đây là mình hiểu, mình có 32 sample. 32 cái đoạn mô tả về cái phim"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:21:40",
+      "content": "Bây giờ mình lấy một cái ra. Vậy một sample, nó có 8 từ. Và mỗi từ được biểu diễn bằng một vector có 5 con số. Đó, vậy đây là mình có 8 năm. Là mỗi từ, là đây mình có 8 từ. Và mỗi từ được biểu diễn bằng một vector có 5 con số"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:21:59",
+      "content": "32 đây là 32 cái đoạn mà mô tả phim có 32 cái đảnh giá phim khác nhau và mỗi cái đảnh giá phim mình chọn tới 8 từ ví dụ này và mỗi từ được biểu diễn bằng vector 5 con số vậy thì output của này bằng cái gì bạn đoán thôi mình chưa học tới mình đoán thử là tất nhiên nó sẽ áp dụng cho 1 chiều và cái này chạy được không có lỗi thì chắc chắn là mình đoán là nó chạy được cái chiều nào bởi vì ở trên là mình biến từ 5 xoắn 4, 4 xoắn 3 mà đúng không? Thì khi mà mình áp dụng cái linear thì nó sẽ áp dụng cho cái chiều cuối cùng. Nó giữ nguyên áp dụng cho cái chiều cuối cùng"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:22:35",
+      "content": "Vậy là ở đây mình có 32 sample mà mỗi sample mình có 8 từ, mỗi từ mình biểu diễn bằng 5 con số. Vậy là nó có đúng một lớp linear 1 thôi. Nó có 39 sample thôi. Nó áp dụng cho 32 x 8 trường hợp khác nhau. Mỗi trường hợp có 5 con số. 5 con số này nó sẽ biến đổi thành 3 con số này, 4 con số là thành 3 con số. Điều đó có ý nghĩa là gì? Điều đó có ý nghĩa là sau khi mà chúng ta hồi nãy là chúng ta có chúng ta có một cái dữ liệu hồi nãy đầu vào của mình đó là Hồi nãy Ad ghi là 5, đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:23:23",
+      "content": "Thì có số 5 này chính là Sequence Length thì Ad hay dùng là L Giả sử bây giờ cho L bằng 4 Và sau khi đi qua Embedding Dim bằng 3 thì mình đang có cái này Đó chính là 4,3 Vậy là ở đây mình có 4 từ và mỗi từ được biểu diễn bằng vector 3 con số Mình có 4 từ và mỗi từ được biểu diễn bởi 3 con số Sau đó mình dùng 1 cái linear 3, 2 thì nó sẽ biến đổi 3 từ này nè Nó sẽ lấy 3 từ này Nó áp dụng cho v kép và b 1 cái v kép và 1 cái b này thôi Bởi vì 1 lớp linear thì nó chỉ có 1 cái v kép và 1 cái b tương ứng Tương ứng với con số 3 và số 2 đây nè Đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:24:13",
+      "content": "Vậy là v kép b áp dụng cho cái này Cũng lấy VKP đó áp dụng cho cái này Cũng lấy cái VKP đó áp dụng cho 2 cái này Vậy là 1 cái bộ tham số này nó lần lượt nó làm cho cái này làm cho cái này riêng biệt nhưng mà nó có cùng tham số nha các bạn Vậy thì lúc này mình có thể dùng 1 cái linear để mình tổng hợp cho từng từ Gọi là mình lấy dùng cái chữ token đúng hơn Mình lấy từng token này, hoặc là nó giống bữa trước mà chúng ta học Convolution 1-1 đó các bạn Convolution 1-1 là mình tổng hợp cho từng điểm ảnh Mình thay đổi cái độ sau, thì ở đây nó y chang vậy Là mình cũng giống kiểu Convolution 1-1, mình xác định cho từng cái token 1 Rồi mình tổng hợp 3 con số này đang biểu diễn gì đây Mình mô tả nó thành cái 2 triệu 3 con số này đi qua đây, biến thành 2 con số Nó tổng hợp lại thành 2 con số, có ý nghĩa gì đó nó làm gì đó thì mình cho mình thiết kế thôi chứ thật ra mình muốn biết cụ thể mình phải plot lên rồi mình đoán với một bài toán cụ thể chứ còn về mặt tổng khoác cho các data khác nhau thì mình không biết là nó sẽ làm gì mình chỉ hiểu là mình chuyển đổi số chiều mình tổng hợp thông tin này ví dụ mình có một cái mục đích gì đó và mình bảo ok chiều sâu này nó có cái thông tin này mình mong muốn nó tổng hợp thì mình làm như vậy mình hoàn toàn để 33 cũng được thì chỗ này nó cũng là 3 con số nó không thay đổi số chiêu nhưng mà nó sẽ tổng hợp thông tin theo một cách thức gì đó mình mong muốn nó làm vì lý do gì đó mình thiết kế như vậy rồi vậy thì ok vậy thì giờ áp dụng cái này đó áp dụng cái này ok trước khi áp dụng thì có một câu hỏi liên quan đúng cái phần này luôn của bạn Đức Đức Xuân nói là Sâu lại phần code LinearLayer Cái này đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:26:28",
+      "content": "LinearLayer nè Cái output này đừng nhìn vô đây nhé Đừng nhìn vào cái này Input của mình là 32 sample là 32 cái mẫu đánh giá khác nhau Mỗi mẫu đánh giá nó có 8 token mỗi token được biểu diễn bằng vector 5 con số thì vector 5 con số này biểu diễn thành 4 con số mỗi con số biến thành 3 con số gọi là output của mình output đây nè, cuối cùng nằm trên cùng là mỗi token trong 8 token đó và trong 32 cái đánh giá đó thì nó được biểu diễn bằng 1 vector của 3 con số Rồi bạn Apple Nguyễn nói về cái khúc 11 đúng rồi đó 11 nhóm Convolution 11 Ok không Đức Rồi mới quay lại quay lại chỗ này Đó thì thay vì á mình Convolution trực tiếp thì cũng được Ê xin lỗi thay vì mình flatten mình flatten để nó ra cái này thì cũng được Mình thêm cái linear nữa để cho nó tổng hợp thông tin nhiều hơn Đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:27:44",
+      "content": "Tổng hợp thông tin giống như convolution 1.1, đúng chiều sâu này thôi, không liên quan đến với nhau. Thì lúc này, cái code nào xem? Ad cài luôn cho các bạn. Ad cài tất cả mọi trường hợp luôn để cho các bạn về các bạn đọc. Ad nghĩ là cái này các bạn về đọc một cả tuần, hiểu, muốn ngắm sâu, code lại với cái này, chắc không thôi. Cả tuần ad code luôn. Rồi. Chỗ này là mình chuyển đổi dữ liệu gợi ông đọc đồng ông có làm với con anh thành các vector đúng không? Sau đó làm như sau Qua embedding nè, khi mà qua embedding chỗ này mình input vào mình là mình có 5 từ đúng không? Đó thì cái shape của mình nó sẽ có cái... Cái output nó sẽ có cái shape là 5.."
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:28:29",
+      "content": "5 4 Tại sao chọn 5 4"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:28:32",
+      "content": "Nó là tham số thôi Thay vì chọn 2 vậy nó chọn 4 Nó chỉ là tham số thôi sau đó ad dùng 4,3 thì chỗ này nếu mà ad ghi đúng thì ad phải ghi số 1 nữa bởi vì ad bảo ok có 1 sample vậy là đây mình hiểu là 5,4 nó không phải là nhiều sample đúng chứ 5,4 chỉ có 1 sample thôi 5,4 là 1 cái câu đánh giá thôi câu đánh giá này nó có 5 token ở đây mình hiểu là 5 từ đó bởi vì mình đang tắt mỗi từ thành 1 token còn sau này 1 token nó có những cách thức tắt khác nhau mà khi tắt rồi thì người ta gọi là token chứ không gọi là từ nữa vậy đây mình hiểu là có 5 token mỗi token được biểu diễn bằng 1 vector có 4 con số rồi thay vì mình bảo ok vector có 4 con số này mình tổng hợp để nó tạo thành 1 vector có 3 con số vậy là bây giờ mình có thì vẫn phải có 5 token thôi và bây giờ biểu diễn thành 3 con số sau đó mình mới flatten thì 2 này 5 x 3 bằng 15 x 2, biến đổi thành 15 x 2 rồi thì cái chỗ này ad chạy tiếp nhận xuyên mình chạy tới đây rồi đúng không, cái ad train thì thấy cái loss nó giảm Trong train mình làm gì đây"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:30:06",
+      "content": "Đây là input. Ad làm như vầy cho các bạn dễ thấy. Cho nó cực kỳ gọn cho các bạn dễ thấy. Đây là sample thứ nhất. Gậy ống đập lưng ong. Label bằng 0. Có làm thì mới có ăn. Label bằng 1. Đó vậy là sample thứ nhất là Label 0. Sample thứ hai Label 1 đúng không? Sau khi chạy xong. Đó. Sau khi chạy xong thì thấy lock nó giảm. Sau đó Ad chạy thêm cái nữa. Là cũng là cái input đó, cũng là những con số đó gậy ông độc nước ông có làm hay có ăn, át chạy. Đó, thì nó sinh ra đây là giá trị logit. Logit là giá trị mà chưa tính xác suất. Đó, thì lúc này sample thứ nhất là bằng 0 nè, cho nên cái chỗ z0 lớn hơn"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:30:46",
+      "content": "Còn cái sample thứ 2 là sample label bằng 1, thì cái z1 lớn hơn. Hay là khi mà mình gọi cái hàm softmax thì chuyển qua xác suất đúng không? Cái này label bằng 0 thì xác suất này lớn là 0.9, cái này 0.9 của cái label bằng màu. Để mình kiểm chứng là mô hình của mình có học được hay không. Nó thì nó học được. Và tất cả những cái còn lại thì chắc chắn là nó học được rồi. Mô hình càng phức tạp hơn thì nó càng học được tốt hơn. Đó là điều chắc chắn. Cho nên là các bạn về các bạn chạy thì các bạn thấy những con số tương tự thôi. Nó cũng học được. Nhưng mà ở đây Ad mô tả chuyện gì"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:31:27",
+      "content": "Ad mô tả là mình có thể thêm một lớp linear để mình tầm hợp thông tin cho từng từ và cho từng token và khi ở dạng text này mình áp dụng linear thì nó áp dụng cho chiều sau cùng có nghĩa là đây mình có 5 từ và mỗi từ được biểu diễn bằng 4 con số sau khi đi qua embedding thì nó làm việc trên 4 con số thôi nè chứ nó không làm việc trên 5 cái từ này đâu cho nên mấy cái số 5 mà những nguyên các bạn đừng nhớ lúc đó nha, các bạn nốt vô, lát nữa trong Transformer mình có dùng tất cả những cái gì mà Ad nói ở đây là Transformer nó có dùng hết Ad giới thiệu từng bước, Ad tắt cái Transformer thành những cái bài nhỏ nhỏ xây dựng từ từ chứ còn lát nữa là các bạn thấy là Transformer nó dùng hết đó các bạn nốt lại rồi bây giờ mình tới Transformer, mình nói một hồi Đó mình mới tới Transformer bởi vì Transformer nó dựa trên nền tảng của bài text Và dựa trên nền tảng là mình đang giả sử trong cái ngũ cảnh mình đang có Thay vì mình sử dụng multilayered subtrom Thì hoàn toàn mình có thể đưa vô ANN của tuần trước chúng ta học ngày thứ bảy tuần trước Hoặc là AlexM của thứ bảy tuần này Thì mặc dù năm nay thì Ad không đưa những cái bài đó vô buổi chính Mấy kinh thức đó nó cũ quá rồi"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:32:54",
+      "content": "Nhưng mà cái idea của nó là gì? Idea là... Cái cụm này nè. Ba cái nhóm method này là xử lý dữ liệu SQL. Thì khi mà mình có dữ liệu SQL thì đây là cái từ thứ nhất. SQL có gọi là tôi đi học. Vậy là khi mà mình nói đến tôi đi là mình nghe, mình có thể đoán được cái từ tiếp theo là gì trong một ngữ cạnh. Tất nhiên là nó có nhiều sự chọn lựa nhưng mà mình không biết được là cái khả năng xác suất nó xảy ra của từ này nó sẽ khác với xảy ra cho từ khác đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:33:32",
+      "content": "Cho nên là nó có mối quan hệ sequence là từ bên này nó ấn xạ của bên này từ bên này nó tương tác từ trái sang phải từ phải sang trái cũng được mà chẳng qua là nếu mình không có xử lý ngược cho nên giả sử mình có một đoạn text có sẵn có một quyển sách có rồi một đoạn text có rồi chứ không phải là vừa nói trong lúc mà mình sinh text ra như vầy thì với một text có sẵn thì mình xử lý dữ liệu từ phải sang trái vẫn có ý nghĩa hoàn toàn có chứ, đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:34:03",
+      "content": "Rồi Thì khi mà mình mô tả cái dữ liệu kiểu này thì hoàn toàn đúng thôi Bởi vì rõ ràng mình cảm nhận lúc đầu Ngay khi mình cảm nhận là cái dữ liệu dạng SQL Khi mà chúng ta nói ra những cái từ như vầy Nó có những cái từ mình sắp nói nó sẽ phụ thuộc vào cái từ mình đã nói rồi Thì nó mới thành một cái câu có đầy đủ ý nghĩa đúng không? Thì với cái dạng mô tả dữ liệu như vầy Thì nó cũng hợp lý và nó chiếm, hắt lấy con số đại loại, giả sử nó chiếm 90 hay 95% những nội dung mà có thể mô tả được data mà tồn tại trong thế giới này với cách thức mô tả như vậy. Thì hoàn toàn được thôi"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:34:52",
+      "content": "Và tất nhiên là cái cách thức, cái ràng buộc, cái ràng.."
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:34:56",
+      "content": "Ở đây, 3 cái method này nó mô tả là cái từ Ví dụ tôi đi học thì cái từ tôi ảnh hưởng đến từ đi, từ đi ảnh hưởng đến từ học thì đây là một cách thức mô tả dữ liệu hoặc là một cái ràng buộc nó là một cái ràng buộc để biểu diễn cái dữ liệu text nhưng mà nó vừa là mô tả cho một dữ liệu có sẵn nhưng mà ở cái trường vực lại là nó đang ràng buộc cách thức biểu diễn cho một dữ liệu như vậy thì cũng được thôi, nó có thể mô tả được 90-95% những cái thông tin mà text có và nó phù hợp với cái ngữ cảnh là khi mà data mình ít data mình ít thì giả sử data mình ít mà bây giờ mình có một cái răng buộc mình có ít răng buộc hơn mình có ít răng buộc hơn có nghĩa là mình có thể biểu diễn bằng nhiều thứ hơn mình biểu diễn bằng nhiều thứ hơn mà data mình ít thì lúc này nó dễ bị overfitting và nó dễ sinh ra một cái cách thích biểu diễn mà nó hơi kì, hơi lạ nên nó gọi là overfitting nhưng mà bây giờ trong một cái ngữ cảnh mà chúng ta có nhiều data rồi và tương ứng với nó là chúng ta có phần xử lý tốt hơn tương ứng với nhiều data đó khi mà chúng ta có nhiều data mà cũng không có GPU thì cũng không làm gì được bây giờ có cả 2 rồi vậy thì thuật toán cũng phải thay đổi theo bây giờ ràng buộc mình bớt ràng buộc đi bởi vì cái ràng buộc đó nằm trong data rồi mình làm ít bớt cái ràng buộc lại thì lúc này nó sẽ biểu diễn được nhiều thứ tốt và nó sẽ biểu diễn được ví dụ 5% còn lại và khi mà có data lớn thì nó chống lại được cái sự overfitting chẳng hạn đó cho nên là cái cách biểu diễn này hoàn toàn ok không vấn đề gì nhưng mà nó phù hợp với dữ liệu nhỏ thôi còn khi mà dữ liệu lớn hơn thì thì nó có nhiều thứ quá dữ liệu lớn thì nó có trong đó nó có nhiều thông tin quá mà mình mình luôn luôn chỉ biểu diễn với cái dạng đó thôi thì mình không khai sát hết những cái mình đang có cho nên là bây giờ nó cần một cái cách thức biểu diễn từ mà nó nó thoải mái hơn ví dụ đưa ra một ví dụ ngữ cảnh cụ thể"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:36:59",
+      "content": "Ví dụ là mình nói một câu rất là dài, mình nói một câu, ví dụ giải thử trong một cái ngữ cảnh nào đó mà cái từ này nó có ý nghĩa để nó quyết định đến vấn đề sinh ra. Nó có ý nghĩa với cái từ phía sau có một câu rất là dài, đặc biệt là các bạn học tiếng Anh mà trong những bài viết đinh mà nó đánh đối một xíu. Có nghĩa là cái câu mà mình đang trả lời ở cái khúc này mình phải tham khảo lên tiếp cái paragraph phía trên đó. Đúng không? Nhiều khi đánh đối có thể. Đó, cho nên là một cái câu nó rất là dài như vậy"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:37:42",
+      "content": "Đó, nhưng mà cái thông tin ở chỗ này nè, nó sẽ không, nó phụ thuộc rất ít vào những cái vào những cái vùng này nó phụ thuộc ít nhưng mà nó phụ thuộc nhiều vào cái vùng này bởi vì nhiều khi cái vùng này nó đang mô tả đúng cái sự kiện đó chỗ này nó nhắc lại sự kiện đó chỗ này nó mô tả trước cái sự kiện đó rồi đó thì nó chịu ảnh hưởng nhiều hơn là cái vùng gần cho nên là với cái cách thức mô tả của dạng SQL bình thường của cái nhóm ANN này nè thì một từ hiện tại nó sẽ phụ thuộc nhiều vào cái từ ngay sau nó Còn những từ phía tít ở trên này thì nó phụ thuộc ít hơn"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:38:21",
+      "content": "Thì nó không còn đúng nữa bởi vì trong những trường hợp khác, trường hợp như vậy đúng, trường hợp là tôi đi học thì cái từ đi nó phụ thuộc rất nhiều vào từ tôi. Đúng, nó sẽ đúng 90% các trường hợp. Nhưng mà nó có nhiều trường hợp khác nữa, phức tạp hơn"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:38:39",
+      "content": "Là một từ nó sẽ phụ thuộc vào cái từ tít phía sau, phía trước rất là xa phía trước hoặc là một cái cụm ở phía trước thì lúc đó giả sử mình mô tả được luôn cái phần đang có này của ANN và những cái thêm nữa mà mình xử lý được thì tuyệt vời bởi vì bây giờ dữ liệu nó lớn nó có thể mô tả được nhiều thứ thì mình cần các thức mô tả khác mà nó làm được cái chuyện đó cái chuyện mà Mà khi mà chúng ta tổng hợp thông tin chúng ta tổng hợp thông tin của một từ Tổng hợp thông tin là cái gì"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:39:17",
+      "content": "Chỗ này mình có một cái vector Ở chỗ này mình sinh ra một vector mới Vector mới này thì bình thường là mình copy trực tiếp lên đây Đó là nó đưa cái từ này lên Nhưng mà bây giờ cái vector này tổng hợp thông tin là nó sẽ kết nối với thay vì của cái bài ANN này nó chỉ kết nối với cái từ ngay phía này kết nối lên thôi Thì bây giờ nó mong muốn nó kết nối với tất cả mọi từ luôn. Chứ còn cái cách cũ là nó kết nối với mỗi cái từ xác gần nhất thôi. Cho nên là với cái cách thức kết nối như vậy. Cách thức mà kết nối dạng như vầy nè. Ví dụ ở đây có những cái từ"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:39:53",
+      "content": "Đó thì khi mà cái từ này, giả sử cái từ này cực kỳ quan trọng đối với cái này. Nhưng mà khi nó đi qua đây là nó mất bớt thông tin rồi Đi qua đây nó bị loãng thông tin bởi những dữ liệu đầu vào của những token này đi lên Khi mà đi qua đây thì cái thông tin này nó bị loãng rồi Cho nên là mặc dù là mình biết được là cái thông tin rất quan trọng Cho nên giả sử nó có một cái đường skip connection nó nhảy qua đây thì tuyệt vời Đó cho nên là Cuối cùng người ta nghĩ ra một cái cách thiết kế Cái cách thiết kế này không có gì đặc biệt giải quyết vấn đề rất là bình thường thôi"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:40:27",
+      "content": "Nếu mà chúng ta nhìn ra vấn đề, cái quan trọng là ai nhìn ra vấn đề thì người đó mới khó. Còn giả sử bây giờ mình học ở khía cạnh là người học thì nó quá đơn giản. Ý là cái người mà nghĩ ra họ thông minh. Đó là rất là khó. Nhưng mà bây giờ vấn đề mình học nè thì mình thấy với cách thức của ANN, ví dụ đây là các token thứ nhất T1, một cái vector nha các bạn"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:40:55",
+      "content": "Anh em nó hoạt động như sau đây là T1 sau đó token thứ 2 đẩy đến đây cái hình vẽ này, dù nhiều khi các bạn không nhớ anh em nó hoạt động như thế nào thì các bạn cứ hiểu nó chẳng qua là là một cái lớp linear thôi ví dụ đây mình có x1 đây x0 đưa vô một cái linear thì nó sinh ra cho mình một giá trị h1 đúng không, đi qua một cái linear thôi sinh ra cho mình hash mode, đây mình có hash mode, lấy 2 cái này cộng lại, ví dụ như thế. Thực ra là những nhân chiêu cộng trừ của cái linear mình đã biết hết rồi, không có gì đặc biệt. Vậy là đây là mình thấy, rồi mình cứ truyền như vậy"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:41:44",
+      "content": "Sau đó mình có cái token thứ T, token thứ T là cái từ thứ T đó, nếu mà chúng ta lấy từ từ nó tắt thành token. Thì như Ad nói, giả sử là cái token thứ nhất nó rất quan trọng với khi mà mình tổng hợp tới đây rất quan trọng với cái TN mà với các thức hiện tại của cái nhóm ANA, AlexAM, GIU thì nó phải lần lượt đi qua các node khác thì nhiều khi đi qua các node khác nó mất thông tin Vậy thì bây giờ mình xử lý thì sao? Mình cần có một cái phương pháp mới mà không mất thông tin. Không mất thông tin có nghĩa là gì? Không mất thông tin có nghĩa là... Đầu tiên là mình coi cái cũ. Nó làm được cái gì đó? Cái cũ"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:42:31",
+      "content": "Thứ nhất là nó có tính Sequence. Sequence có nghĩa là cái từ thời điểm T nó sẽ tác động đến thời điểm T cộng 1. Hai này tác động nhau. OK. Vậy là ở đây mình có... Ví dụ ở đây mình có.."
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:42:51",
+      "content": "DN chữ 1 Vậy thì nó có một cái liên kết trực tiếp như vầy Liên kết nó cài đặt bằng một cái tính toán cụ thể nào đó Thì mình tính sau bây giờ mình đang vẽ hình thôi Ở mặt thiết kế thôi Anh em nó làm rất tốt rồi 90% rồi Là bởi vì nó có tính sequence OK Vậy là thiết kế mới của mình cũng phải có tính sequence Mình nối đấy Vậy là khi tổng hợp IN thì mình có cái token thử dn, anh gọi là dn nha Và mình có cái token dn-1 Mình nối lên đây Nối lên có nghĩa là mình đưa nó vô làm input cho cái đó không? Vậy được rồi Còn lúc đó nó làm cụ thể gì mình tính sao"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:43:38",
+      "content": "Vậy là đúng bài này rồi Bây giờ cái số 2 là cái thiếu này Thiếu của cái anion này Là không có đó Đó là những cái nốt ở phía trước Những nốt phía trước nó muốn truyền cho cái IN này thì nó phải thông qua những cái nốt nó đi lần lượt kiểu này, vậy thì nó dễ mất thông tin Vậy thì làm sao để không mất thông tin thì nối trực tiếp luôn Vậy là bây giờ cái input để tổng hợp IN lấy hết Thì lúc này khi mà mình lấy nhiều như thế đòi hỏi tính toán phải nhiều hơn, đòi hỏi data phải lớn hơn để nó kiểm soát cái chuyện đó Thế còn khi mình kết nối nhiều, rõ ràng kết nối nhiều thì cái capacity nó lớn thì nó dễ bị overfitting"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:44:20",
+      "content": "Mà để giải quyết vấn đề capacity lớn thì phải có data lớn đúng không? Ở trong những cái bài cũ mình thấy cái điều đó đúng không? Đó, vậy là về mặt thiết kế. Nói lại nha. Là hồi nãy mình có một cái lớp linear này. Linear. Ở đây mình có, ví dụ mình đưa vô 5 từ"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:44:41",
+      "content": "Sau đó mình sinh ra 5, 4 là mỗi từ được biểu diễn bằng bằng 1 vector có 4 con số rồi sau đó ở đây là mình có 5 token và mỗi token tương dụng với 1 vector vậy thì mình có thể mô tả cái mỗi tương tác giữa 5 vector đó bằng cách là ok mình lấy ok đây là v1 rồi sau đó mình lấy v1 mình sinh ra v2 mình đưa vô mấy cái lớp linear thôi chứ không có gì đâu linear xong rồi sinh ra V3 rồi sinh ra V4 ví dụ index bắt đầu từ 1 rồi sinh ra V5 mấy cái lớp linear hoặc là tương tự như thế đó rồi chỗ này mình mới sinh ra H5 ở đây là chỗ này nó sinh ra H4 H3 h2, h1, h2, h1, h2, h2, h2, h2, h2, Cái token thứ nhất nó chuyển sang token thứ 2, nó chuyển sang token thứ 3, nó chuyển sang token thứ 4"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:46:16",
+      "content": "H2, Giả sử cái token thứ nhất h2 mà nó muốn ảnh hưởng trực tiếp với cái thứ 5 không được. Cách ANA nó làm như thế. Cho nên là ở đây mình làm theo cách thức là OK, bây giờ mình muốn tổng hợp H1. Thì tất cả mọi cái này đều chuyển vô H1 hết"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:46:37",
+      "content": "Thì lúc này khi mà mình chuyển hết vô như vậy thì thì thông tin mình không sợ bị mất cho nên là cuối cùng thiết kế nó giống như vầy mình tổng hợp lên y giả sử như chỗ này mình đang là 5 4 mình tổng hợp 1 hồi, mình tổng hợp ở đây là để thông tin tổng hợp với nhau để nó thành 1 cái biểu diễn mới thì cái shape của nó vẫn là 5 4 thôi hoàn toàn là có thể khác nhưng mà ở đây mục đích của mình là để tổng hợp dữ liệu cho nên là mình không cần phải thay đổi cái shape làm gì tránh phức tạp Mình cứ giữ nguyên cho nó đơn giản Đó là mục tiêu của cái cách thiết kế Transformer đó Bây giờ mình suy nghĩ mình làm thử Rồi, và hiện tại bây giờ mình đang có khúc này Vấn đề là tại sao mình lại có cái hình dạng như vầy Là bởi vì dựa vào bài cũ Dựa vào cái giới hạn của Anand Đó là Một cái từ hiện tại, tôi đi học Thì cái từ học Nó bị tác động nhiều với từ đi Và từ tôi mà tắc động đến.."
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:47:42",
+      "content": "Anh viết đây nha. Tôi đi học. Thì lúc này mình có một cái kết nối trực tiếp từ đi sang học. Có một cái kết nối trực tiếp từ tôi sang đi. Còn mình có cái kết nối gián tiếp từ tôi sang học. Thông qua cái tôi sang đi và đi sang học. Anh nói lại nha"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:48:04",
+      "content": "Cái mô hình cũ là tôi đi học nó mô tả Cách thức cài đặt cụ thể có nhiều cách làm như AlexM, Anand, GIU Nhưng ý nghĩa mà thiết kế là tôi đi học từ tôi ảnh hưởng trực tiếp đến từ đi Tôi đi ảnh hưởng trực tiếp đến từ học Từ tôi ảnh hưởng đến từ học gián tiếp thông qua 2 đường này Chứ nó không có đường nào trực tiếp Thì người ta phát hiện ra hành động gián tiếp này là thông tin chuyển không động Nhiều khi mình muốn thông tin refer trực tiếp nó tham khảo trực tiếp bởi vì lúc đó thông tin nó rất là quan trọng khi mà mình truyền qua như vậy thì mất thông tin nó bị ảnh hưởng bởi cái từ gần nhất rất là cao đặc biệt là khi mà cái chuỗi của mình rất là dài từ đó mình sinh ra cái thiết kế mới là ví dụ tôi đi học thì tôi bằng một vector đi là một vector học là một vector một cái biểu diễn mới là gì biểu diễn mới cũng là một cái vector thì cũng vector khác thôi mà nó biểu diễn gì đó thì mình để nó làm cho mình khiết kế nè Thì thay vì chỗ này là input vào là tôi đi học thì bây giờ cũng là 3 cái mới cũng là 3 cái vector tương độ dài bằng nó luôn độ dài đây là bằng 4 con số 4 con số thì đây cũng là 4 con số Nhưng mà về mặt khiết kế là cái vector này được tạo ra từ cái hình dạng kết nối như vầy từ cái hình dạng là Đấy, cái này là tổng hợp từ D0 lên D1 lên...DN lên Có nghĩa là tất cả mọi token đều phải là input để tổng hợp cái EZ0 này hết Tại sao là như thế"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:49:49",
+      "content": "Giải quyết ANN nó không có kết nối trực tiếp thì giờ mình kết nối trực tiếp Bây giờ thiết kế sau cho phù hợp thôi Rồi Bây giờ mình làm từ từ nha À vậy thì dễ thôi Cách thức đơn giản nhất là cái gì? Cách thức đơn giản nhất là cái gì các bạn? Các bạn cứ suy nghĩ một cách rất là bình thường thôi nha Không có gì đặc biệt Ví dụ trong cái bài skip connection á Cái này nó cũng giống như skip connection là nó mút mùa ở đâu đó nó nhậy xuống đây Trong cái skip connection mình có cái đường như vầy Đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:50:24",
+      "content": "Mình có x ở đây x1 Rồi chỗ này mình có x2 Đó mình có skip connection mình nhậy xuống đây Đó, thì cái chỗ này mình hay để cái phép toán gì trong đây các bạn S1IO, S2DIO, trong này mình hay để cái phép toán gì ở chỗ này Cập cộng đúng rồi, đó, thì cái này skip connection chứ có gì đâu Cập cộng Cho nên là chỗ này đơn giản E0 bằng D0 cộng D1 cộng ... Cộng D1 đó Đó Nhưng mà cái chỗ này chưa hợp lý Bởi vì sao? Bởi vì rõ ràng như là trong ANN nó là một cái rất là hợp lý rồi. Nó chưa tổng quét 100% thôi, chứ nó cũng rất là tốt rồi trong ANN đó. Đó là cái từ gần nhất, nó có nhiều thông tin hơn"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:51:17",
+      "content": "Ví dụ Ad nói ra một cái đoạn, một câu nói, thì rõ ràng những cái từ gần nhau nó có mỗi tương quan lớn hơn chứ. Đó là cái chuyện không cần phải chứng minh đâu. Giống như là tình đề rất là dễ hiểu, rất là rõ ràng"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:51:32",
+      "content": "Cho nên là cái chỗ này mà mình cộng theo kiểu đều đều như vầy đâu có được Vậy là mỗi từ nó có ý nghĩa như nhau mà, đâu có được Cho nên là như vầy không hợp lý Mà nó phải có một cái trọng số Trọng số là ví dụ α0 Trọng số khác nhau α1, αn trong đó tổng của αi phải còn 1 Thì cái việc tổng bằng 1 là chuyện bình thường thôi đúng không Chúng ta lấy bao nhiêu phần trăm của cái này, bao nhiêu phần trăm của cái này, bao nhiêu phần trăm của cái này khi chúng ta tổng hợp giống như là chúng ta có 3 trong hội đồng, chúng ta có 10 người, chúng ta thảo luận hết và chúng ta tham khảo ý kiến của từng người nhưng mà mỗi người mình có niềm tin đối với mỗi người trong hội đồng nó khác nhau, đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:52:12",
+      "content": "Nhà xưởng mình là người đưa đầu quyết định khi mà mình có niềm tin với mỗi người thì mình nghe của từng người ý kiến của từng người xong, mình tổng hợp và mình tin ai nhất thì cái giá trị trọng số đó cao nhất đúng không? Cho nên... Cho nên là.."
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:52:28",
+      "content": "Cho nên là đấu bước bước 1 đó là cái công thức này hợp lý Hợp lý mà chưa hoàn thiện thôi Công thức này ok bởi vì mình cần để tính được I0 nó là một cái hàm mà từ D0 cho đến DN nó là N còn một cái token là input đầu vào tất cả mọi token đều là input của nó hết thì đơn giản mình làm phép cộng hết thì cũng được hoặc là chia thêm tính giá trị trung bình thì cũng được cho nó khỏi bị giá trị lớn lên Nhưng mà mình quay lại và bảo ok mỗi từ khi mà chúng ta đang suy nghĩ chúng ta muốn tổng hợp thông tin cho một vị trí nào đó thì rõ ràng mỗi từ nó sẽ có ảnh hưởng khác nhau cho nên bây giờ mình cần tính ok bao nhiêu phần trăm cho cái này đây bao nhiêu phần trăm cho cái này bao nhiêu phần trăm lấy cái từ này đây thì lúc này nó sẽ sinh ra cho mình là giả sử Ad đang muốn tính cái này tổng hợp cho I0 cho nên Ad gọi α này gọi là α0 trong đó α0 mà nối với D0 thì Ad gọi là α00 α0 mà nối với D1 thì Ad gọi là α01 mình lấy cái này làm gốc cho nên là I0 nó sẽ bằng bao nhiêu phần trăm của cái D0 bao nhiêu phần trăm của D1 bao nhiêu phần trăm của Dn Rồi Rồi Sau đó đến chỗ này Là làm sao để tính AlphaZero Hoặc là cụ thể làm sao để tính Alpha00 Alpha chỗ này Rồi Vậy thì khi mà mình muốn suy nghĩ là làm sao để tính chiếm bao nhiêu phần trăm khi tổng hợp I0 mình chiếm bao nhiêu phần trăm của D0 chiếm bao nhiêu phần trăm của DM1 thì mình phải suy nghĩ đến một cái bài cụ thể là lúc này là D0 cho đến DN nó chính là đi ngang qua cái embedding và cái embedding này nó biểu diễn cho mỗi từ mỗi từ là có một cái vector cho không gian và những vector này nó có thể dịch chuyển và khi mình đang làm ở cái bước này thì giả sử là mình cái phần embedding đã tối ưu rồi tại vì mình đang tối ưu cái này thì mình phải giả sử cái kia nó cố định đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:55:04",
+      "content": "Mình đang thiết kế cho cái này thì những cái khác phải cố định đó giả sử cái embedding đã tối ưu rồi và các từ nó đã dịch chuyển ok hết rồi thì ok hết thì có nghĩa là sao"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:55:15",
+      "content": "Thì khi mà mọi người quan sát đối với tất cả bài toán thì một cái embedding mà nó có tính hội tụ, nó có thiên hướng và nó sẽ hội tụ theo một chiều như sau Đó là đối với tất cả mọi bài toán thì khi mà chúng ta đọc, máy nó làm thì cũng như người thôi thì chúng ta đọc một cái comment thì chúng ta thấy à nó có những cái từ mà liên quan mình có thể sắp xếp những cái từ mà nó đồng nghĩa với nhau trong không gian những từ mà nó có gần ý nghĩa với nhau, nó gần nhau cũng có ý nghĩa với nhau, nó nằm trong 1 cục khác, nó phân từng cục Ví dụ như là tiền, ngân hàng, nó nằm trong 1 cục trảo viên, bài học nó nằm trong 1 cục Nhưng mà 2 cái cục này nó tách biệt nhau Để làm sao để cái dữ liệu của mình giống như cái dữ liệu của mình nó phân cục rõ ràng thì nó rất là dễ phân loại đúng không Ví dụ mình có cái dữ liệu của mình là như vầy Thì mình phân loại rất là dễ Lúc này nó diệt chuyển thì những cái từ mà nó đem lại những cái thông tin như nhau Thì nó gom lại thành một nhóm Cho nên ở đây là những cái từ mà nó đem lại thông tin gì đó trong một chủ đề Mình có thể hiểu trong một cái cảnh cụ thể là những từ đồng nghĩa chẳng hạn Thì nó nằm gần gần nhau Còn những nhóm đồng nghĩa khác nó nằm Đồng nghĩa khác không có ý là nó chạy với những cụm khác"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:56:48",
+      "content": "Ví dụ như Ad nói, cái cụm liên quan đến ngân hàng, tiền, trưởng khoản. Một cụm thông tin gắn ở đây. Học hành, học sinh, giáo viên, thi nó nằm ở cái cụm khác. Tắt hai cụm ra. Giả sử cái embedding nó đã nằm trong cái đó rồi. Thì lúc này, Thì khi mà tổng hợp I0 thì chúng ta sẽ tổng hợp I0 chỗ này thì mình sẽ lấy I0 là cái mà mình xác định luôn là nó sẽ đại diện cho D0. Mình bảo là OK"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:57:29",
+      "content": "Bởi vì ở đây mình có i0, mình có i1 thì nó lấy đại diện cho cái này Cho nên là mặc dù ở đây mình đưa n cộng 1 cái token lên Nhưng mà mình vẫn ám chỉ là i0 đang tổng hợp cho d0 Tương tự cho các i khác Rồi bây giờ mình tính cái này đi Mình muốn biết được là cái token cái từ d0 để khi mà tổng hợp i0 mình muốn biết là khi tổng hợp cái này Thì mình đang muốn tổng hợp D0 lên Vậy thì chỗ này mình bảo OK, D1 nó có nên 9% nhiều khi tổng hợp Y0 hay không Trong đó là mình đang dựa trên nền tảng của D0 Để cho D0 ở đây Giả sử mà đang làm cái bài mà Một cái bài nữ nghĩa thông thường trong thực tế thì nó cũng sẽ phân cụng, những cái từ nó phân cụng như thế và mình dựa vào cái phân cụng như vậy mình có data nó phân cụng lúc đó mình làm một cái thao tác một cái bài tỏa nào đó nó cũng rất là dễ dàng bởi vì dữ liệu nó đã phân cụng rồi Vậy thì bây giờ khi mà mình đã dựa vào cái embedding mà đã phân cụng rồi những cái từ phân cụng nó nằm trong không gian những cái góc nó nhỏ Vậy thì I0 mà dựa trên nền tảng của D0 và mình đang muốn xác định là D1 nên chím bao nhiêu phần trăm của D1 thì mình sẽ dùng cái toán nào mình đã học rồi và nó cực kỳ phổ biến mà cái toán đó nó mô tả được cái chuyện là ok D1 nếu mà mình sẽ lấy D1 nhiều khi D1 ở Cái từ của D1 nó nằm gần với D0 và khi mà mình sẽ lấy ít khi mà D1 nó nằm xa D0 bởi vì giả sử embedding nó đã học được dựa vào hàm lót thiết kế như thế nào đó tùy vào bài toán mà những cái từ nó có mỗi tương tác mỗi liên quan đến nhau nhiều thì nằm gần nhau Nhân nó dùng tích vô hướng"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "01:59:54",
+      "content": "Các bạn khác ok không các bạn? Dùng Cosine Simultaneity được nhưng mà Cosine Simultaneity cũng công bằng tính cái mẫu nó tốn nhiều thời gian. Cũng được các bạn. Nhưng mà lúc này người ta chọn cái từ thôi để dùng tích vô hướng. Tại sao vậy? Bởi vì trong không gian những cái từ mà nó gần nhau đó thì cái góc nó nhỏ, góc nhỏ thì tích vô hướng lớn hay là Cosine Simultaneity lớn. Còn mình có 2 từ mà nó xa nhau, ví dụ đây là D0, đây là D1, nó xa nhau gấp lớn thì cosine similitude giảm, tích cố hướng cũng giảm. Cho nên ở đây mọi người chọn là OK, E0 là tổng hợp từ D0 lên đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:00:54",
+      "content": "Để tính một cái giá trị α0i nào đó có nghĩa là dựa vào nền tảng của d0i là một cái token khác khi người ta làm tích vô hưởng Tại sao lại như thế"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:01:12",
+      "content": "Ad làm thử nha Rồi, tổng hợp i0 trong đó α0i là 2 cái này Lấy 2 cái này với nhau và mình xác định là Y0 là tổng hợp cho D0 mà Mình lấy 2 cái này, 2 cái này tích vô hướng 2 cái này tích vô hướng thì nó đẹp giá trị Giá trị lớn Nó chưa phải là max bởi vì nó còn phụ thuộc vào bản thân giá trị nữa Nếu mà mình chuyển sang Cosine Similarity thì nó là giá trị 1 Đại loại là OK, đây là trường hợp lấy nó trên nó thì nó lấy được giá trị lớn Vậy là nó sẽ lấy phần trăm rất là lớn Đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:02:00",
+      "content": "Còn khi mà mình thích vô hướng mà nó cùng hướng rồi nhưng mà 2 cái điểm này nó cũng góc bằng 0 nhưng mà 2 cái điểm này nó xa nhau thì 2 con số nó nhân lại, tổng lại nó vẫn khác Các bạn cứ hiểu cái này là nó tương ứng với giá trị lớn nhất, subsy kiểu kiểu như vậy Khi mà chúng ta tính cos cpu t có cái mẫu thì nó ra nhất trị 1 luôn Còn ở đây là chúng ta không lấy mẫu cho nên nó sẽ chạy từ trừ vô cùng đến vô cùng để đoạn 1 con số lớn Rồi tổng hợp chỗ này α00 thì nó lấy 9 nó Tại vì luôn luôn có bản thân d0 ở đây Lấy bản thân nó tích vô hướng cho 9 nó để ra con số lớn có nghĩa là chiếm 1% rất là lớn Rồi bây giờ muốn tính % bao nhiêu 0 1, mình lấy D0 bởi vì mình đang tổng hợp cho D0 mà mình tích vụ hướng với D1 thì nó ra phần trăm thì nếu mà D1 này nó là một cái từ mà nó có nó có chứa nhiều thông tin tương tác với D0 thì hai từ này sẽ gần nhau tại sao vậy"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:03:05",
+      "content": "Đó là nhiệm vụ của em nhất định em nhất định nó phải có làm nhiệm vụ đó nó sẽ thay đổi theo cái nhiệm vụ của anh rồi Rồi tương tự như thế, mình tính alpha 0n thì mình lấy d0, mình tính tích vô hướng với dn. Rồi, thì mấy cái d này, mấy giá trị d này mình đi qua embedding là nó có cùng sai hết chứ. Đúng không? Mình đâu có khác sai được. Quay lại phút này nè"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:03:48",
+      "content": "D0 là những cái này nè D1, D2, D3, D4 Rồi Rồi nhìn lại khúc này nha các bạn Vậy là tổng hợp cái này á Mình lấy bản thân cái này tích vô hướng bản thân nó lên đây Rồi mình lấy D0 tích vô hướng với cái này Mình lấy D0 tích vô hướng với cái này Thì khi mình tổng hợp cho I0, tương tự như thế, cho I1 cũng như thế. Sau khi mình tính được α0, thì α0 nó bao gồm những thành phần α00, lấy bao nhiêu phần trăm của D0 đây. Với khi mà tổng hợp cho I0 thì cái giá trị này rất lớn, cho nên nó sẽ lấy rất nhiều từ D0, chuyện đó chuyện hiển nhiên rồi. Rồi sau đó lấy bao nhiêu phần trăm của cái này, lấy bao nhiêu phần trăm của cái này"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:04:42",
+      "content": "Thì nếu như là cái từ D1, Cái từ D1 nó rất là gần với D0 thì cái giá trị này cũng rất là lớn Rồi Vậy thì, à sắp xếp lại thôi Là mình đang tính AlphaZero đúng không? Đó thì lấy D0 này Mình làm việc D0 Đó thì mình tích vô hướng với 3 cái này thì mình hoàn toàn có thể sắp xếp 3 cái này đưa vô 1 cái mai trận Đúng không? Đó và đây là D0 Kết quả đây là cái dòng này chính là cái dòng AlphaZero Đúng không? Rồi sau đó tương tự như thế Mình tính cắt trọng số để tổng hợp cho Y1 thì có phải là mình lấy D1 làm gốc không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:05:27",
+      "content": "Lấy D1 làm gốc Sau đó mình nhân tích vô hướng Các bạn không hiểu vì sao tích vô hướng thì nói ai hết Khi mà mình tính tích vô hướng là mình đang giảng xử là cái embedding nó đã thỏa mãn cái chuyện là những cái từ nó có thông tin tương quan với nhau, nó gần nhau cho nên là khi mình tính tích vô hướng và những cái từ nó có thông tin tương tác với nhau thì lúc này giá trị nó lớn giá trị lớn thì lấy phần trăm lớn rồi đây là tổng hợp cho alpha 1 để sinh ra y1 tương tự như thế mình đang tổng hợp cho alpha n cho nên đây là dn dn và tổng hợp cho in Cho nên là cuối cùng mình có cái này"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:06:15",
+      "content": "Từ 3 cái này, đây chỗ này là tổng hợp cho α0, α1, αn. Thay vì mình viết thành nhiều dòng n cộng 1 dòng như thế thì mình gom lại thành 2 mai trận. Gom 2 cái mai trận thì chỗ này dòng này chính là α0 để tổng hợp e0. Dòng này chính là αn để tổng hợp en. Rồi"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:06:43",
+      "content": "Và giả sử mình đang được nghĩa là một cái mạng lấy những cái input như hồi nãy mình thể hiện đó những cái input là 5, 4, 5, 4 là mình có 5 cái token là mỗi token được biểu diễn bằng một vector có 4 con số mình gọi là D hay là hồi nãy mình gọi là cái gì đó thì hết gọi là D thôi thì cái chỗ này chính là DT vậy là mình có công thức ăn pha bằng DDT đúng không? Mình lấy D, trong đó D là gì"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:07:10",
+      "content": "D chính là 5,4 đó 5,4 là có 5 token mà mỗi token được biểu diễn bằng 1 vector có 4 con số Mình lấy DDT nó sẽ sinh ra cho mình 1 cái mai trận Trong đó dòng thứ nhất là α0 để tổng hợp E0 Dòng cuối cùng là αNr để tổng hợp ENr Ok không các bạn? Các bạn hỏi gì không? Bạn Hakebi hỏi là giờ thì chắc mình hiểu sao mô hình lên tỉa Cái này chưa có tham số nha. Cái này chưa có tham số gì hết. Tất cả những cái... Cái này là nó có tham số ở cái khúc Embedding thôi. Chứ còn cái chỗ này mình tự làm cho nhau mà. Mình tự... Giả sử mình đang xem cái 54. Nó là Data. 54 này là Data. Thì lúc này mình chưa có tham số gì hết"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:07:58",
+      "content": "Mình đang lấy 9 cái Data đó mình nhân cho nhau. Cho nên nó mới gọi là Self-Attention. Attention là chú ý. Chú ý là cái gì? Chú ý là coi ok mình lấy bao nhiêu phần trăm của cái này, mình lấy bao nhiêu phần trăm của cái này, mình lấy bao nhiêu phần trăm của cái kia. Rồi thì lúc này mới gọi là attention. Bây giờ self-attention là cái bao nhiêu phần trăm đó mình tự lấy ra từ cái nội dung của mình. Và cái chỗ này là đúng. Cái output là nó bằng với cái input, cái size như nhau. Mình đang tổng hợp thông tin thôi chứ mình chưa thay đổi. Khi mà cần thay đổi thì mình nối vô multilayershapetron hay là mình nối vô cái linear sau. Còn đây mình đang tổng hợp thông tin thôi"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:08:39",
+      "content": "Rồi match n1 nghĩ là sao? N1 thì có n dòng 1 cổ đúng không? Rồi. Đó. Nhưng mà chưa đâu. Cái đó chưa phải trong firmware. Firmware mình nhiều. Đáng bàn thôi. Rồi. Vậy là sau đó mình đã xác định được alpha zero rồi. Bằng cách là Nguyên 1 file thì bằng DDT đúng không? Trong đó file 0 là cái dòng đầu tiên. Thì từ cái dòng đầu tiên đó mình xác định là ok lấy bao nhiêu phần trăm của D0 khi tổng hợp I0 bao nhiêu phần trăm của I1 tương tự như thế. Đó là xác định lấy bao nhiêu. Đó là về mà thiết kế nhé các bạn. Ad đang mong muốn là thiết kế là lấy bao nhiêu phần trăm. Nhưng mà mấy con số này, nguyên con số này, đây là alpha 0 này"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:09:31",
+      "content": "Ad mong muốn là nó lấy bao nhiêu phần trăm của D0, lấy bao nhiêu phần trăm của D1 thì lúc này nó làm được chưa các bạn? Nó đã thể hiện được cái ý đó chưa? Nó đã thể hiện được cái ý là lấy bao nhiêu phần trăm của D0, lấy bao nhiêu phần trăm của D1 chưa? Hay là nó mới thể hiện được cái ý là lấy nhiều hay lấy ít thôi đúng không? ISS nó nói là như vầy nè. Kết quả của tích vô hướng, tích vô hướng cho Y Nó sẽ nằm từ trừ vô cùng đến vô cùng. Nằm từ trừ vô cùng đến vô cùng. Vậy có lẽ là... Chỗ này nó biểu diễn là lấy bao nhiêu, lấy bằng nào. Nó lấy rất là lớn, hoặc là một con số âm thì... Số âm lấy bao nhiêu ta"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:10:16",
+      "content": "Lấy âm là lấy sao? Đúng không? Rồi cái này là số dương bằng 10, thì mình lấy 10 lần. Chỗ này bằng 7, thì lấy 7 lần. Trừ 1 thì... Nhưng mà mình đổi từ những con số này sang dạng phần trăm thì mình dùng, mình áp dụng cái gì các bạn? Có nghĩa là nguyên cái dòng này nó có thể là cái dòng này nó có thể là 7 chừ 2, 8, 5 nhưng mà giờ Ad muốn đổi là phần trăm cơ, chuyển qua phần trăm cơ Ad dùng cái gì? Ad dùng softmax đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:10:50",
+      "content": "Đó là lý do tại sao mình dùng softmax để làm gì nó biến thành bao nhiêu phần trăm thôi tại vì cái giá trị tích vô hướng nó có thể số dương số âm thì sau khi mà mình tính sốc mắc thì số âm nó cũng ra phần trăm bao nhiêu luôn cho nên đó lý do là tại sao mình dùng sốc mắc và là alpha của mình biến đổi thành alpha bằng sốc mắc DDT và sốc mắc này mình áp dụng cho từng dòng cho từng dòng thế này rồi Chỗ này người ta thực nghiệm và tác giả nói là ok mình chia thêm cho D Đây là độ dài của vector khúc đầu này Độ dài của input đầu vào trước khi đi vô transformer Hồi nãy mình hay gọi là embedding dim Nhưng mà trước khi đưa vô attention này người ta hay gọi là Dmodo Độ dài của mô hình trước khi đi vô, cho nên là người ta chia cho căn D Đây là một cái kiểu practical khi mà mình chia cho một con số thì nó làm cho distribution nó smooth hơn thay vì mình có một con số 100 rồi 50, rồi 70, rồi bằng 3 nó lật nhiều các bây giờ mình muốn kéo nó thành một cái đường smooth hơn, đỡ nhiễu hơn thì mình chia cho một con số Tại sao là chia cho D mà không phải chia cho con số nào khác Ví dụ như có người thể chọn ms in dim bằng 52, có người thể chọn 128, có người thể chọn một con số khác"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:12:33",
+      "content": "Vậy thì khi mình lấy tổng cái chỗ này có phải là mình lấy những cái giá trị này tính từng cái giá trị này có phải là mình lấy dot product là tính tổng đúng không tính tổng có độ dài khác nhau thì nhiều khi nó sẽ ra một cái giá trị khác nhau bởi vì Mình có 1.000 con số, cộng với 1.000 con số, với cộng 10 con số nó khác nhau chứ. Thì làm sao mà nó có ảnh hưởng như nhau? Mình chia cho cái độ dài đó. Thì người ta thực nghiệm người ta thấy là chia can đề là ok nhất. Người ta lấy chia cho can đề. Để nó smooth hơn thôi. Chứ bài bình thường mình bỏ đi cũng không vấn đề gì đâu"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:13:07",
+      "content": "Còn cái này là về mặt thực nghiệm, giống như là mình hay chia cho con... Chia cho... X cộng cho epsilon đó mà. Để nó trắng cái chuyện mà chia cho zero. Thì mình có cái này vô cho nó smooth cái hàm này. Rồi vậy cái chính của mình là mình đang tính softmax cho từng dòng để nó biến thành bao nhiêu phần trăm. Mình chia cái này là mình chia trước trước khi tính softmax để cho cái hàm này nó smooth hơn. Thay vì cái phần trăm nó có độ lật nhiều quá. Ví dụ mình dồn vô cái rất là lớn thì nó kéo là smooth lại xíu. Để nó không có một sự nhảy quá lớn"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:13:42",
+      "content": "Rồi vậy là cuối cùng tổng hợp lại là mình sẽ tính DDT và chia cho cái này cho nó smooth hơn và tính SWAP Mark thì nó sẽ ra cho mình làm Alpha trong đó nó có cái dòng thứ nhất dòng thứ nhất chính là AlphaZero mình lấy cái dòng này mình nhân cho cột là chứa tất cả những cái token thì lúc này nó sẽ trẻ vào cho mình I0 là đây, ở đây mình hiểu Address kiểu này là mình hiểu cái D nó nằm ở dạng nào ta? Lấy dòng này À ok, chỗ này nó hơi.."
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:14:37",
+      "content": "Tại vì bản thân, cái D0 đó là 1 vector mà Đó cho nên là cái vector này nó có 3 con số Ví dụ vậy, kéo thành 1 cái mai trận Và lấy cái dòng này nè, bao nhiêu phần trăm mình lấy cái dòng này mình nhân cho cột này có nghĩa là mình lấy bao nhiêu phần trăm của D0, bao nhiêu phần trăm của D1, bao nhiêu phần trăm của Dn Nhưng mà mỗi cái D nó là một cái vector có 3 con số cho nên là chỗ này mình hiểu là nó sẽ áp dụng cho từng con số 1 Có nghĩa là lấy cái này mình áp dụng cho cái chiều thứ nhất trong mỗi cái vector này lấy cái này áp dụng cho chiều thứ 2 trong mỗi vector kiểu vậy thì lấy bao nhiêu phần trăm Ví dụ vector của mình là bằng V1, V2, V3 Ví dụ mình lấy 5% của cái này thì tương ứng với lấy 5% của từng cái Alphabet của mình vẫn là V1, V2, V3 tổng hợp Vậy là chỗ này mình sinh ra được một vector để tổng hợp D0 Xin lỗi, để tổng hợp sinh ra E0 và D0 nó cùng cái size Ví dụ nó đang có 1 vector có 4 con số thì E0 cũng là 1 vector có 4 con số Chẳng qua chỉ là nó lấy bao nhiêu phần trăm Chẳng qua là phép cộng thôi như này Ad nói đó E0 bằng phép cộng của những cái này Thì đây là 1 cái vector thì mình chuyển thành vector Thì cuối cùng output của nó cũng là 1 cái vector Vậy là cuối cùng mình sẽ được y"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:16:18",
+      "content": "Đây chính là nền tảng của chatroom.org. Ok, các bạn đợi át xíu nha. Rồi. Các bạn đợi át xíu để át tắt cái phần... Các bạn có câu hỏi gì không? Phần cài đặt thì cài đặt theo thôi Ví dụ ở đây mình có... Tại sao gọi 3 cái này thì nó... Giờ cứ gọi đây là Us thôi Us, Us, 3 cái này như nhau Us này đều là 5, 4 hết Nó là 1 cái Us mà 5, 4 có nghĩa là mình có 5 token và mỗi token được biểu diễn bằng 4 con số Sau đó thì có phải là mình lấy... Mình lấy 2... Gọi là D đi D đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:17:42",
+      "content": "Sau đó mình lấy D nhân cho DT Transpose hắt dùng chừ 2 chừ 1 ý là đang có một cái pass size phía trên Ví dụ đây đang Transpose chỗ này 54 thì nó sẽ chuyển chỗ này thành kết quả là bằng D54 nhân transpose chỗ này nó biến thành dt 4 5 2 này làm cho nhau nó sinh ra cho mình 1 cái mai trận 5 nhân 5 5 5 đây là 5 năm ở đây là mình có 5 năm đúng không đúng rồi và làm ở đây mình có alpha 0 đó AlphaZero ở đây, AlphaZero ở đây mình có 5 con số 5 con số này để lát nữa mình lấy bao nhiêu phần trăm của cái DZero trong cái 5 token này nè Lấy bao nhiêu phần trăm của từng token 1 Rồi sau đó chia cho canh D Rồi sau đó Submark và nhân cho D Nhân cho D chính là cái này đúng không thì nó ra Y"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:19:12",
+      "content": "Submark và nhân cho value D. Chính là cái mà MyMultiHeadAttention là của lớp mình chứ bên ngoài người ta đâu có làm vậy. Rồi sau đó bây giờ mình làm gì đây"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:19:34",
+      "content": "Input của mình nha, ví dụ input của mình là ad gọi cái SQL LEN bằng 5 đi, embed bằng 4 đi rồi hai cái này dropout chưa, mình chưa dùng từ dropout, divide, kệ mình cứ chạy bình thường thôi divide là chạy trên GPU mà đó là input của mình sau khi input chỗ này là 5 4 đi qua cái embedding input của mình input chỗ này là 5 thôi sau đi qua embedding output chỗ này là mỗi vector nó sẽ biến thành mỗi con số nó biến thành vector có độ dài vòng 4 rồi sau đó đặt tên là queryKeyValue bởi vì nó liên quan đến cái bài transformer phía sau chứ ở đây mình cứ hiểu output output thì cứ hiểu đây là D đó sau đó mình đưa vô D D D lại nhé chỗ này đang là có 5 tờ sau khi đi qua Embedding thì chỗ này nó sẽ là 54 gọi đây là D chuyển vô đây là D nè đó vậy là ghi vô đây D D D chỗ này mình sẽ làm D nè nhần DT đúng không chia cho căn D nè sau đó lấy Submark rồi sau đó mình nhân thêm cho D vậy nó sẽ ra A'i Ở đây là Apogee"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:21:05",
+      "content": "Vậy chỗ này là 54 thì ở đây cũng là 54. Nó tổng hợp thông tin cho mình thôi. Nó tổng hợp thông tin. Và sau đó bây giờ mình làm tiếp. Vậy thôi bây giờ mình tổng hợp một lần. Mình muốn tổng hợp lần nữa thì mình lại gọi tiếp. Thôi flatten. Nói vậy thôi. Rồi. Vậy là xong. Mà cái chuyện này rất là hiển nhiên nữa các bạn. Mình trong cái ANN là khi mà mình kết nối các từ với nhau không được thì bây giờ mình kết nối thôi. Trong Thì Trong Trăm Phong Mơ nó kết nối hết tất cả các từ với nhau. Và Adkai cái này cho các bạn luôn. Adkai cái bài giải cái bài dữ liệu đốn text toàn hoàng mà dựa vào cái vườn mô tả luôn"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:21:55",
+      "content": "Thì cái này buổi chiều Ad phát hiện là nó dùng Toxtex, Ad chưa chuyển đổi. Nó để read-only, mình đọc để tham khảo thôi. Bởi vì đây là cái mà nó không phải là version Transformer thật. Version Transformer đơn giản mà Ad lược bỏ đi hết. Chỉ dựa vô cái đúng cách của mình thôi. Mà cái Ad nói thì trong sách không có đâu các bạn. Ad hiểu, Ad nói, các bạn lại thôi. Thế còn... Không, Ad nghĩ là không ai biết. Không ai thực nghiệm cái kiểu này đâu"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:22:26",
+      "content": "Đó thì sau khi ad cái này xong, ad chạy với 1 data Các bạn tham khảo thôi, chạy với 1 data và nó đạt được chính xác là 75% 75% là cũng là ok rồi đó, khi mà ad dùng cái block channel former thật thì nó đạt được có 78% rồi, nó thua có 3% ý là dùng cái block thật nhé, nhưng mà cái lúc mà mình train nó cũng đạt được 99% Đây là dữ liệu thật nhé các bạn, dữ liệu đánh giá phim bình thường, các bạn về các bạn đọc thêm phai này dữ liệu đoạn đánh giá phim dữ liệu này nè IMDB là lúc đó chỉ sử dụng một cái hidden layer này thôi rồi sau đó làm đây để làm gì để cho các bạn thấy được là ok đây là bản chất của tranh firmware bản chất firmware là cái này là cái lõi này cái này chứ không phải là một cái gì đó mà các bạn đọc một tài liệu bên ngoài là tranh firmware nó nhiều thứ lúc đó nó che giấu đi cái lõi Người ta không che dấu mà người ta đã làm một sản phẩm hoành trình rồi Bây giờ mình học mình cần phải biết là lý do tại sao mỗi sản phẩm nó tốt như thế nào Đó thì bây giờ mình thảo luận tiếp Các bạn còn nhớ cái bài CNN không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:23:48",
+      "content": "Trong cái bài CNN là mình mong muốn là mình lấy feature của cái input sau đó ra Feature Map, mình lại áp dụng Synthetic để lấy Feature tiếp. Mặc dù mình đã lấy Feature phía trước rồi, nhưng mà bên trong mình vẫn muốn lấy Feature tiếp. Để nhiều khi phía trước nó làm một thứ nhiều quá không được, nó làm một cái tag nhỏ nhỏ nào đó thôi, vô trong mình làm tiếp. Ở đây cũng thế"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:24:16",
+      "content": "Ở đây là cái embedding nó đã dịch chuyển rồi nhưng bản thân nhiều khi embedding nó làm nhiều việc quá nó làm không tốt thì ở đây là mình vẫn hỗ trợ mình đang có những cái từ đi vào xin lỗi mình đang có n cái từ đi vào có n cái token đi vào n-1 thì lúc này mình sẽ dịch chuyển nó một lần nữa mình dịch chuyển phụ nó đó hoặc là có cách giải thích khác giống như mấy cái động cơ mấy cái cái khớp với nhau bây giờ mình phải thêm những thành phần để cho nó khớp cho nó hoạt động mềm mại hơn Thì lúc này mình làm sao? À, lúc này mình mới xin thêm tham số Mình không... Hồi nãy chỗ này là x đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:24:54",
+      "content": "Mình có mấy cái D đó Giờ add đổi thành x Đó thì... Thì... Thay vì là mình lấy những giá trị x hoặc là những giá trị D hồi nãy Để mình lấy 2 cái x1 x0 và x1 mình tính dot product tất hướng với nhau Thì không Bây giờ trước khi mình tính như vậy, mình sẽ đi qua 1 lớp linear. Ở đây Ad tạo ra 3 lớp linear. Là lớp linear chuyển từ đây đang có 1 vector độ dài là D này. Chuyển từ độ dài bằng D, chỗ này là cho hết bằng 1. Mình thảo luận hết bằng 1 cho đơn giản. Đó, sang cái độ dài M. Đó chính là cái linear DM"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:25:48",
+      "content": "Tương tự như thế, mình có 1 cái chuyển đổi từ D sang M mình cứ cho dùng cùng kích cỡ cho đơn giản vì mình tổng hợp thông tin sau này mình muốn thay đổi thông tin thì mình mới thay đổi cái size sau mặc dù là cái chỗ này mình để O thì mọi người đều dùng M cho cái giá trị không là M luôn nhưng mà theo công thức thì nó là 1 cái shape khác Vậy thì lúc này mình làm cái gì? Mình có bằng 4 bộ tham số này giữ nguyên, không thay đổi. Đó, mình lấy cái D này đi qua bộ tham số thứ nhất. Nó có chiều dài là bằng... Bằng D. Đó. Thì mình chuyển sang một cái... Chuyển sang độ dài M. Nhưng mà thật ra ở đây cứ hiệu bằng D hết đi cũng được"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:26:38",
+      "content": "Trong thực tế nha các bạn, cho bằng nhau hết. Trong thực tế. Rồi, đây Ad cứ nói đơn giản cho bằng D x2 Vậy là chỗ này là mình có một cái x Đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:26:57",
+      "content": "Nó sinh ra cho mình Đi qua cái này Nó sinh ra cho mình một cái tên là Qui Nó sinh ra cho mình một cái tên là K Và sinh ra cho mình một cái tên là Ba Lứ Kích cỡ không thay đổi Đó là mình đang có 1 vector có 5 con số Mình đi qua 1 linear 5-5 Linear input là 5, output là 5 Nó chỉ tổng hợp thông tin 5 con số đó thôi Và bây giờ cái shape không hề thay đổi Cái shape ban đầu chỗ này của mình ví dụ đang là 5-4 Thì sau khi mình đi qua cái này nó cũng đang có mình là 5-4 Mình hoàn toàn có thể thay đổi những tham số cho nó khác cái shape nhưng mà mọi người đều dùng như nhau thôi 5-4 Thay vì hồi nãy mình bảo có 3 cái D thì bây giờ mình dùng 3 cái bộ tham số khác nhau thì nó xin cho mình 3 cái mình ký hiệu là QueryKeyValue bởi vì người ta lấy cái ý tưởng từ cái bài toán từ Trivo thì người ta bảo cái hành động mình đang làm nó giống bài toán đó quá cho nên người ta lấy những cái từ khóa bên đó người ta gọi là QueryKeyValue Thì lúc này mình tính mình cứ hiểu là mình lấy đây là một lớp linear này Mình chuyển đổi tổng hợp thông tin đầu vào thành một vector mới và chỗ này thành một vector mới Sau khi mình làm tương tự như thế mình gom tất cả những cái Q, K, V lại thành 3 cái mai chậm Thì thay vì mình làm một cái củi như vầy thì bây giờ mình thành một công thức mới Công thức thay vì mình DDT chỗ này tính shockmax là nhân cho D thì chỗ này Quy kt value Mọi thứ như nhau, nó chỉ khác ở cái gì"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:28:45",
+      "content": "Nó chỉ khác là là là mình tạo ra 3 lớp linear Chỗ này là 5, 5 Xin lỗi linear chỗ này là 4, 4 Bởi vì nguyên khúc dưới này là data của mình input vào là đang 5, 4 5, 4 mình chuyển lên đây thì cuối cùng cái Quy của mình đó cũng là 5, 4 Mình giữ cái shape lại cho nó đơn giản. Rồi. Đó. Thì khi mà mình có thêm 3 cái lớp linear như vậy thì lúc này mình có một cái thư viện tên là Multihead Attention chứ không phải là My Attention là cái này đã cài đặt. Là lúc nó không có cái này. Đó. Thì khi mà chúng ta sử dụng thêm cái này. Đó. Thì nó tên là Multihead Attention và cái đó là 9 cái người ta làm"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:29:42",
+      "content": "Sau khi mình có các Output như nãy sau khi ShopMax thì nó gắn thêm một lớp Linear nữa Ví dụ ở đây Input đầu vào là 5,4 sau đó mình có một cái QKValue để 5,4 hết sau đó mình tổng hợp xong thì cái chỗ này nó ra cho mình là 5,4 Chỗ này mình định nghĩa thêm 1 lớp Linear tiếp cũng để 44 luôn, Output Y đây cũng là 54 luôn Mặc dù là chỗ này mình để tham số khác thì nó ra khác nhưng mọi người đều dùng dữ nguyên để cho nó... Mọi người thật trong thực tế người ta dùng như vậy Thì ở đây Ad thảo luận với các bạn ở cái bới cấu hình như vậy cho nó đơn giản Rồi Vậy là so với slide trước là mình thêm gì"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:30:35",
+      "content": "Mình thêm 3 lớp Linear, chỉ 3 lớp duy nhất thôi thì đặt tên là VKQ, VKK và VKV 3 cái này áp dụng cho tất cả những cái input ở dưới mình xin 3 ma trận Q, K, V và lúc đó mình tính được A A này là mình hiểu A ở đây cũng là 5, 4 vậy là mỗi vector mỗi token được biểu diễn vào 1 vector có 4 con số từ 4 con số này mình qua 1 clip linear 4, 4 thì nó cũng ra 5, 4 tại sao người ta lại làm như vầy bởi vì bây giờ người ta thêm tham số vào để cho nó hỗ trợ cái phần embedding và nó hỗ trợ thêm tham số vào Còn cái khúc này người ta gọi là projection nó cho phép mình thay đổi kích cỡ nhưng mà thông thường mọi người không thay đổi kích cỡ chỗ này ở đây về mặt thiết kế người ta thay cái này để thay đổi kích cỡ thêm một lớp linear thôi Rồi anh làm ví dụ nha Input của mình là chỉ có 1 token thôi, đây là 1 token SQL Lens bằng 1 và Embedding Team bằng 3 Ở đây Ad cho Head bằng 1 Head bằng 2 thì phức tạp hơn xíu, các bạn đọc tài liệu mà Ad gửi trong tuần này, các bạn tổng hợp lên Chỉ cần mình hiểu chi tiết, mình hiểu hét bằng 1 là ok rồi Hét bằng 2 trở lên nó cũng thay đổi xíu nè Nó giống như là mình có 2 cục kernel đó mà Rồi ở đây là mình có 3 con số để biểu diễn cho 1 token Áp tạo ra 1 cái linear 33 cho nó đơn giản Linear 33 Đó bảo là cái này nhân cho cái này Cái này nhân cho cái này Cái này nhân cho cái này Đó thì các bạn xem là nó giữ được tổng hợp thông tin nè input của mình là 13 thì cái này cũng là 13 nó tổng hợp thông tin thôi input của mình là 13 đi sau đi tính K thì nó cũng là 13 tính V thì nó cũng là 13 thôi cái dữ liệu nó cũng như như nhau chẳng quan trọng tổng hợp để cho nó thêm tham số vô để nó làm được cái chuyện gì đó làm cái task nào đó rồi rồi sau đó mình lấy QIKT Quy KT thì chỗ này là đang là vector dòng, đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:33:04",
+      "content": "Bởi vì cái này với thiết kế như vậy nó đang là vector dòng. Cho nên là KT đây nó biến thành cột. Mình chia cho cái D này. Rồi mình nhân thêm cho cái V bên ngoài. Đó thì nó làm một hồi. Đó thì nó ra như này. Nó cũng là một vector, nó cũng là một ba. Sau đó mình nhân cho cái Output đây. Như Output đây mình để nhiều cột thì nó sẽ sinh ra cho mình thêm. Còn ở đây thông thường là mọi người sẽ giữ 33 để cái Output. Cái Output xếp nó bằng với cái Input xếp. Để làm gì? Để lúc này... Để lúc này... Nó có thể chồng nhiều cái Trangformer lên với nhau. Đúng không? Rồi. Cái phần Max Depoder thì... Khi nào mình học mình thảo luận tới nhé. Cái này mình chưa học"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:33:50",
+      "content": "Mình đang làm cái phần classification mà cần encoder thôi rồi sau đó câu hỏi tiếp theo là 3 cái này mình học dựa trên thông tin thì cập nhật dựa vào đâu nếu dùng loss thì so sánh à đây là lớp linear mà lớp linear thì lúc này mình đâu có cần phải xử lý gì đâu đúng không ví dụ ở đây mình đang có x S mình lấy từ embedding sau đó mình lấy S1 đi qua lớp linear 4,4 chuyển vỡ S S2 đi qua lớp linear khác cũng 4,4 luôn chuyển vỡ S S3 cũng đi qua linear 4,4 chuyển vỡ S Rồi sau đó mình gọi cái này là queryKeyValue Rồi sau đó mình tính toán gì đó thì mấy cái tính toán này nó đâu có sinh ra tham số Vậy thì cái này nó là tham số mà Tham số đầu vào thì lúc này nó chỉ là lớp linear bình thường thôi Thì lúc này cái trọng số của những cái lớp linear ở đây ví dụ x1, x2 là những con số đi thì nó sẽ sinh ra cho mình z1, z2 đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:35:26",
+      "content": "Thì đây mình có cái kép 1 thì nếu mà đạo hàm chỗ này theo loss, theo z1 thì giờ xử mình tính đạo hàm được tới đây tính sao? Tính sao thì tùy vào cái layer phía sau là cái gì đó mình tính cái đó ví dụ giá trị là 7 thì đạo hàm tại vị trí này thì nó bằng tổng ví dụ đây là 7, chỗ này là 8 thì nó bằng 7 nhân cho... 7 nhân cho gì? Có b nữa hả? 7 nhân cho x1 cộng 8 nhân cho x2, đúng không? Cái này y chang bài linear bình thường thôi, không có vấn đề gì, đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:36:00",
+      "content": "Rồi rồi, cũng có hỏi tiếp theo của bạn Hà follow up đó là tham số linear để tạo ra k value cập nhật dựa vào Dựa vào Hamlots bình thường, nó nằm trong mô hình mà Dựa vào Hamlots nó bắt propagation bình thường, đâu có vấn đề gì đâu Rồi, lát nữa hết nhiều hơn 1 thì các bạn thảo luận ở phía sau Bạn A Pong Nguyễn hỏi là 3 mấy cái tham số đó mình khởi tạo ngỗ nhiên ban đầu đúng không? Lớp linear khởi tạo ban đầu theo Hi hay là Jbeer bình thường? Thay vì mình lấy những cái input mình nhân trực tiếp với nhau bây giờ mình đi qua 3 lớp linear nằm bên trong này nằm bên trong này add có code lại ở đâu đó không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:37:26",
+      "content": "Để add xíu nha ở đây nè query key value nó sẽ lấy, cái này Ad không code trực tiếp cái này bây giờ mình dùng thư viện, chỗ này nó dùng thư viện rồi còn nếu mà mình code trực tiếp thì mình tạo ra 3 cái lớp linear mình làm còn ở đây là khi mà Ad giới thiệu là mình dùng 3 cái linear như thế là bắt đầu nó sinh ra cái thư viện chỗ này là chỗ này Ad dùng thư viện này luôn còn cần Ad code riêng lẻ được Ad nhớ là ad code riêng lẻ một lần để tìm xem cái file nó nằm ở đâu Ad nhớ là có code riêng lẻ trên firmware block Linear, dùng cái này. Phải cót lại cái này. Có cót một lần, Ếch để đâu rồi đó"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:38:59",
+      "content": "Rồi mình cho qua cái này nhé. Để Ếch tìm cái file đó Ếch gửi cho các bạn. Ếch cót rồi. Cái này cốt bình thường thôi. Kiếm lại một lần cuối nhé. Multi-Attention Element. À nghĩ là đây nè, là đây nè đúng không? Mình có cái Qui này Ad lấy cái version này cho đơn giản, remove pass size rồi mình có Input là cái này đúng không? Tại vì mấy cái ví dụ mà Ad làm cho các bạn đó là Ad code mà, code bằng tay chứ đâu phải là Ad lấy code sẵn code bằng tay nè mình có cái Qui đó, đây là cái Linear thay vì mình bảo ở đây Ad có code theo lớp Linear không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:39:51",
+      "content": "Thay vì lấy con số cụ thể thay linear cũng ok đây là linear 33 này là lúc mình làm mình không tạo ra con số này đâu nha mình tạo ra một cái linear 33 là được rồi ở trong đó nó cũng có cái bias ở đây ad bỏ bias đi để cho mình dễ minh hoạt thì lúc này mình lấy cái qi mình nhân tích vô hướng mình nhân với vector mà chậm và và khi mà mình làm thì nó tự động cập nhật trong Pytorch nó tự động cập nhật nếu mà chúng ta sử dụng linear còn cụ thể Ad làm một cái mên hoạ cụ thể là nó làm như thế nào câu hỏi thú vị rồi nó cập nhật như thế nào thú vị ha như Ad cũng vừa làm ví dụ hồi nãy đó ví dụ mình có x mổ x2, 2x thôi nha đúng không, Ad thấy cái z mổ Chỗ này tạo ra một z thôi, cho nên dễ tính Bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ bộ Vậy b thì có phải là z1 bằng x1 v kép 1 x2 v kép 2 cộng b cho nên là đạo hàm của loss theo v kép 1, đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:41:23",
+      "content": "Muốn tính v kép 1 ở đây đúng không? Của lớp linear mà. Đó thì bằng x1 nhân 7. Đúng không? Ok không hả? Tại vì câu hỏi Ad cũng không hiểu là mình hỏi khúc gì chứ còn... Với cái này thì anh thấy nó đơn giản như vậy thôi. Rồi, cái này khởi tạo ngô nhiên. Bạn Nam khẳng hỏi là... VKEP0 khởi tạo rồi nhưng nó mang ý nghĩa gì? Tại sao không dùng lại ở A? À, họ muốn thêm các bạn ạ. Họ muốn tạo ra một cái block. Họ muốn tạo ra một cái transformer nó có nhiều block và mỗi block có khả năng thay đổi tích cỡ"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:42:10",
+      "content": "Là ví dụ đây mình có A A đang có cái shape là 5 4 bây giờ mình muốn đổi cái output của nó thành cái shape là 5 10 cũng được thì lúc này mình dùng một cái linear là 40 nhưng mà trong thực tế thì không ai dùng vậy và ngay cả cái block transformer này nó cũng chưa tối yêu cho nên là đó là lý do vì sao các bạn thấy cái cài đặt trong Python nó còn có nhiều thứ nữa nó có thêm group bound và nó thêm thêm một activation bên trong nữa, cái này các bạn chưa thấy nó chưa có activation, toàn là như cái lớp linear với nhau thôi, thêm một activation GALU hay GALU vào, rồi thêm dropout nữa"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:42:51",
+      "content": "Cái này nó vẫn có nhiều cái nhiều nhợt điện, nhưng mà cơ bản là những gì anh nói. Ờ đúng rồi, tất cả mọi thứ đều dựa vào loss set, từ loss nó trả về"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:43:04",
+      "content": "Chứ không có tính riêng từng bước các bạn Không có phải tính rồi lấy kết quả tính tiếp không Mọi thứ gọi là end to end Ví dụ khác Ví dụ này thì các bạn không cần để ý đến những con số cụ thể Các bạn nhớ đây là cái shape 2,3 Và khi mình làm một hồi thì mình cũng sẽ giữ được cái shape 2,3 Ví dụ Assign ra cái Quy Cái này là lớp linear, lớp linear là 3,3 thôi nó cũng ra 23, k cũng ra 23, v cũng ra 23 sau đó mình tổng hợp k, qi chia cho d nó tính một hồi nó ra cái giá trị này đây là cái vector thứ nhất vector sắc sốt thứ nhất vector này nó tính lấy bao nhiêu phần trăm của d0 bao nhiêu phần trăm của d1 bao nhiêu phần trăm của.."
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:43:54",
+      "content": "Xin lỗi, của 2 cái d đây có 2 từ thôi a book của mình cũng ra 23 Rồi sau đó cái chỗ này mọi người mình có thể thay đổi kích cỡ phút này mình có thể thay đổi nó có độ dài nhiều hơn nhưng mà không mọi người vẫn giữ thông thường là như thế vẫn để là 23 thôi Đây là người ta lựa chọn chứ không phải là một cái gì đó mà mình phải theo cho nên Ad mới nhấn mạnh cho các bạn, Ad mới cài cho các bạn là cái Mind Attention là như vậy cái gốc là cái Mind Attention và mấy cái kia là người ta thêm vô thôi thì trong thuật tán là người ta thêm thuật tán khác người ta thêm cái khác rồi đây là cái hình tóm tắt lại tóm tắt lại quá trình chỗ này là 54 đây cũng là 54 thì chỗ này ra 55 55 ở đây là mình có 5 token đó thì mình lấy ok bao nhiêu phần trăm khi tổng hợp E0 thì mình lấy bao nhiêu phần trăm của từng năm thuốc cần đó Multihead thì mình làm nhiều hết mình làm nhiều lần mình lặp lại nhiều lần Thay vì mình có một input là bằng năm để mình đưa vô mình làm cái vừa mình vừa làm sau đó mình làm cái input bằng 10 đó vậy là mình có 2 cái đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:45:33",
+      "content": "Đó mình làm được 2 cái hết làm được 2 lần giống như mình có 2 cái kernel bằng 15 mình làm được 3 cái thì trong paper thay vì mình nói là ok bây giờ cái kích cỡ image dim của mình tăng lên 3 lần thì mình làm được 3 cái hết thì người ta bảo là ok hãy định nghĩa trước cái image dim đi ví dụ image dim định nghĩa bằng 15 Ví dụ embeddingdim định nghĩa bằng 100 thì mình xây dựng 4 heads bằng cách lấy 100 chia cho 4. Nó là ngược, thay vì mình suy nghĩ với tư tưởng tăng từng kích cỡ lên thì mình có thêm cái head thì người ta bảo ok hãy định nghĩa embeddingdim trước và số lượng head"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:46:16",
+      "content": "Số lượng mà dữ liệu áp dụng cho mỗi head thì bằng độ dài, vector độ dài đó đó chia cho số lượng head. Ví dụ mình có độ dài bằng 100 thì nó cắt ra làm 4 phần, mỗi phần độ dài là 25, nó lấy 25 cái này vô nó xử lý cho hết thứ nhất, 25 cái tiếp theo vô xử lý hết thứ 2. Cắt suy nghĩ ngược lại thôi. Nhưng mà ở đây, ở khía cạnh là mình dùng khi mà các bạn nghiên cứu chuyên sâu vô cái mạng Transformer và mình muốn tạo ra một cái Transformer khác thì mình tìm hiểu chuyên sâu, còn ở khía cạnh là mình sử dụng ban đầu nó sử dụng như là hộp đen trước thì nhiều cái hết các bạn hiểu là nó giống như mình nhiều cái kernel lên"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:46:52",
+      "content": "Đó thì cái chỗ này là mình có khi mà mình xin ra mỗi cái head thì nó nối vô, concat vô. Concat thì mình có ví dụ vector này bằng 10, mình có 4 vector bằng 40. Rồi, nhiều head có ý nghĩa là gì? Có giống như việc biến thể của I0 mô tả. Thì nó có nhiều cách học, giống như mình có nhiều cái kernel thôi. Với một cái head thì nó có một cái cách học. Với một cái kernel thì mình có nhiều cách để mình quét thông tin đến một cái ảnh. Thì đây là mình có nhiều cái head thì mình sinh ra nhiều cái trọng số, ba cái query k-value khác nhau. Mỗi cái head có một cái query k-value khác nhau. Thì lúc này mình ký hiệu là head thứ y"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:47:41",
+      "content": "Thì lúc này mình sẽ có nhiều cái tham số khác nhau thì mình học bằng nhiều cách khác nhau. Giống như mình có nhiều cái kernel. Rồi, và đây là một cách cài đặt. Và đây là cái mô hình Transformer mà người ta đưa cho mình. Người ta kiến nghị cho mình trong bài paper. Đó, cái Position này không vấn đề gì. Position này không có tác dụng nhiều. Chỗ này mình đang có 5-4 này. Và cái Position của mình cũng là 5-4"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:48:22",
+      "content": "Nó cũng là embedding thôi Ví dụ ở đây mình có 5 từ, mình có từ số 0, số 1, số 2, số 3, số 4 Đó, mỗi từ này nó có một cái vị trí Vị trí này thì mỗi vị trí số 0, số 0 thì thay vì mình đưa số 0 vô mô hình thì mình có một cái vector riêng, vector tương ứng với số 0 Số 0 bên này khác với số 0 bên này 2 cái khác nhau Đó, thì mình lấy 2 cái này cộng lại thì chỗ này là 54 Đó, mình đi qua cái multi-head attention chỗ này Đó, thì nó chạy về cho mình 54 sau đó mình đẩy cái này lên 2 cái này cộng lại rồi mình tính norm chỗ này mình tính layer norm với batch norm nó chẳng qua là nó chọn những cái nhóm khác nhau để nó tính norm thôi đó thì chỗ này nó trả ra cũng là 5 4 rồi sau đó mình tính mấy cái Y0 nằm trong đây hết nè sau này người ta bảo ok thêm cái linear chỗ này đi linear chỗ này mình cho bằng cái gì cũng được giả sử mình cho bằng 44 đi thì lên đây nó cũng là 54 mình chuyển lên đây sau đó chuyển lên đây output chỗ này cộng vô và tính non lần nữa nó cũng ra 54 còn cái này là cái classifier mình tùy thiết kế tới từng bài toán và khi mà người ta thiết kế như vầy người ta bảo ok đây là đây là một block thì cái chỗ này là thêm cái lõi nha, cái lõi bản thân là bên trong cái multi head attention này là nó có rất nhiều thứ bên trong rồi nhưng mà cái lõi nó vẫn là cái mà hồi nãy ad cài cho các bạn đó cái lõi chính là softmax của DDT nhân cho D ở ngoài đó là cái lõi sau đó nó bọc thêm một vài cái giống như hồi nãy mình hỏi cho các bạn là khi mà ad cài cái lõi thì chỗ này đạt được kết quả là 74-75% 75% là cả 1 cái lõi thôi các bạn MyAttention nó không có mấy cái tham số MyAttention làm gì đây Nhân đúng rồi, nó không có mấy cái tham số QK value luôn Rồi sau đó add kite với cái attention mà người ta làm nó thêm QK value Thì nó đạt được chứng xác cao hơn 1 xíu Tất nhiên nó sẽ cao hơn rồi, 79% Thì nó thêm tham số vô để cho nó tối ưu hơn chẳng qua người ta đang giống như là thay vì mình dùng Linnet bây giờ nó thiết kế ra VGG hay là thiết kế ra ResNet vậy đó Chứ nó vẫn có một cái lõi là Convolution Nhưng mà cái Imprue đây thì chẳng qua là thêm mấy lớp Linear với thêm cái Skid Connection thôi Rồi, đó thì Ad gửi cho các bạn code 4.1 với đến 4.4 Nó làm gì"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:51:41",
+      "content": "Quay lại cái bài gạy ông đọc đứng ông có làm mới của anh Ad mô tả để cho các bạn về đọc nha là bài này là ad sử dụng mỗi multihead attention thôi sau khi multihead attention xong làm luôn còn bài số 2 là ad dụng multihead attention rồi thêm cái layer norm nữa thêm cái layer norm sau đó bài số 3 ad thêm layer norm và ad thêm cái projection Thêm layer norm này, thêm 1 cái linear projection có nghĩa là thêm 1 cái lớp linear nó chuyển đổi từ chỗ nào sang chỗ nào 10 nốt sang 20 nốt ví dụ thế Rồi bài số 4, thêm skip connection Thì nó chính là cái bài transformer Đó, Ad cài từng bước cho các bạn xem Chính là bài transformer Và cuối cùng là Ad đang cài từ từ cái này cho các bạn xem Cái này là cái lõi Bản thân bên trong cái này nó có cái cell attention là cái lõi Từ đó nó thêm cái tham số để xây dựng QuikaValue Thì nó sinh ra cái này Rồi sau đó nó lắp thêm là skip connection ở đây to norm ở đây skip connection ở đây to norm ở đây Nó chỉ là một cách lựa chọn nha các bạn Nó chỉ là một cách lựa chọn thôi chứ nó không phải là một cái công thức gì đó mà mình phải theo Sau này những cái mô hình trang mô khác nó thay đổi khác hoàn toàn Thậm chí trong đây là mình không có Activation, vì sao người ta thêm Activation ở đây nữa Thêm Galoo vô chỗ này cho nó ok hơn Còn bài gốc là không có Rồi Vậy thì cuối cùng khi mà mình có Các bạn nhớ cho Ad cái thông tin này Đó là khi mà Input của mình đang là 54 Đi qua cái chỗ này nó sẽ trải về cho mình 54 và khi mà đi ra khỏi block này nó cũng trả về cho mình 5,4 tại sao là như thế"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:53:56",
+      "content": "Bởi vì mình cần phải nhân cho n cái block này với nhau cho nên là cứ giữ 5,4 này mình trồng n block lên, ví dụ là 100 cái block này lên với nhau kiểu vậy rồi rồi bây giờ mình thảo luận bài này nha gậy ông, đọc nữ ông, có làm thì mới có ăn. Rồi bây giờ cái multihead attention bên trong nó làm gì đó thì mình tính sao bây giờ mình mới học mà cũng không nhớ hết. Mình đại loại là nó sẽ tổng hợp và nó giữ lại cái shape cho mình. Vậy ở đây là mình đầu tiên add có us là có 5 từ. Us, 5 từ"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:54:50",
+      "content": "Sau đó mình đi qua mAdding là hát coi mAdding cho tham số bằng nhiêu nha mAdding bằng nhiêu đây, bằng vocab size số lượng class mAdding là tham số số 3 bằng 2, số lượng hết bằng 1 vậy là chỗ này nó sẽ chạy về cho mình là 52 đúng không 5, 2 Rồi sửa Attention xong Rồi thì nó sẽ trẻ vào cho mình Thùng hợp thông tin vẫn là 5, 2 5, 2 Đó flatten, chỗ này nó ra kết quả là 10 cho nên anh phải để 10 nốt chỗ này nè 10, 7 Sau đó chỗ này là classifier chạy về 2 node. Vậy. Rồi. Đó, vậy là chỗ này mình dùng cái multi-head attention. Mà mình chưa sử dụng nguyên cái khối. Mình không có sử dụng cái kính nghị của họ. Mình sử dụng cái phần lõi"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:56:17",
+      "content": "Là thay vì mình sử dụng annend để mình tổng hợp, bây giờ mình dùng multi-head attention. Rồi, còn... Sau đó chỗ này nó chuyển, rồi add AquaTrain thì tất nhiên là nó chạy được hết Các bạn về các bạn xem thêm ha Rồi tương tự như thế Ở bài này là add cộng thêm cái non Rồi add giải thích cho các bạn là layer non sơ sơ để ngày thứ 6 các bạn sẽ đi sâu vô cái phần đó sau trong phần norm ở chỗ này là mình sẽ trả về cho nãy là mình trả về chỗ này là 5,2 đúng không? 5,2 nhưng mà bài này bởi vì add đầu thành 10 bởi vì thêm số đi vào đây bằng 10 tại sao vậy"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:57:06",
+      "content": "Bởi vì ở đây mình có 5 token mỗi token được biểu diễn bằng 10 con số thì lúc này layer norm làm gì"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:57:13",
+      "content": "Layer norm này đối với mỗi token lấy 10 con số đó ra mình tính min và tính variant nó sẽ tính mean value cho chiều cuối cùng cho nên là nếu mà mình chọn số 2 cũ thì nó ít quá, 2 con số thôi nó chạy không ổn được, nên nó đổi thành 10 đó là add thêm cái non đó này khi add thêm cái non chỗ này thì mình thấy nó đang ở đây rồi đúng không mình thích add attention thêm non này rồi sau đó add thêm cái số 3 này là add thêm gì đây add thêm một cái linear nữa Multi-Header Tension, tính norm, thêm cái Linear thứ 2, tính norm, là Ad đang cài cái này, thêm cái này, rồi tính norm, Ad vừa thêm 2 cái này"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:58:06",
+      "content": "Sau đó cái file thứ 4, Ad skip connection, Ad lưu chỗ này, rồi 2 cái này cộng lại, rồi lưu lại, rồi cộng lại, là Ad đang cài đặt cái phần này"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "02:58:20",
+      "content": "Cái này là cho cái bài đơn giản, thì khi mà các bạn về á, các bạn đọc code phần này trước Các bạn tự cài bài này trước để mình hiểu bản chất Mà mình thấy được con số nó chạy sao luôn Đó là sau đó mình đọc những bài lớn sau Rồi đây là một ví dụ khác ha À các bạn hãy coi cái ví dụ này mình có gì hay không ta À mình có 1 bắt size có 2 token mỗi token có 3 con số rồi sau khi chỗ này mình có shape là 23 mình đi qua đây mình dựa vào các tham số này nó chạy về cho mình là 23 rồi sau đó mình cộng lại tính 5 Mình lấy cái dữ liệu này lên Mình cộng cái dữ liệu này Sau đó tính norm Thì khiêm norm thì nó sẽ tính norm cho từng cái này này Cái này là một cái một cái token đúng không Lấy cái 3 cái này các bạn cộng lại cái này là bằng 0, min bằng 0 Stand deviation bằng 1, lấy cái này tính norm Để các bạn thử xem, cộng lại bằng 0, cộng lại bằng 0 Rồi Sau đó mình làm gì chỗ này nó đang mô tả layer norm đối với diệu transformer này đối với từng bug size, à xin lỗi đối với một sample và đối với một token đây là một sample đối với một token mình lấy tất cả cái chiều sau channel của token đó nói chung lấy hết một cái token mình đi chọn hóa, lấy hết cái này lấy hết cái này tên min với standard deviation Rồi sau đó mình làm gì tiếp"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "03:00:17",
+      "content": "Áp dụng cái này luôn hả? Từ từ từ. À, cộng chỗ này đúng không? À, cộng trước, cộng trước. Rồi sau đó mới áp dụng non. Cộng lại mới non lên này đúng không? Rồi tiếp, tiếp phần này. Rồi đăng chỗ này, output ra chỗ này, rồi lại đến forward cái này Rồi sau đó mình cộng lại, add cộng trước rồi add tính non, add vẽ thành 2 phần Giờ cộng nè Cộng lại tính non, add làm tắt luôn, về các bạn tính thành đó Chỗ này add tắt ra, cộng lại, cái này 2 bước các bạn, cộng lại trước rồi tính non Rồi, cái code add gửi cũng có cái phần minh hoạt này cho các bạn Rồi, Ad nghĩ là cũng nhiều thông tin rồi đó. Chắc là Ad thảo luận với Dr"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "03:01:28",
+      "content": "Đền Vinh để ngày thứ 6 mình thay đổi nội dung một xíu. Ngày thứ 6 là hiện tại đang sắp xếp là chuyển đổi trang Primer cho Ad và Time Series. Ad nghĩ là sẽ nói cái phần này một xíu. Rồi, với thông tin có như vậy thì Ad cài đặt với các bạn 2 ứng dụng. Đầu tiên là ứng dụng liên quan đến text"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "03:01:52",
+      "content": "Đánh giá phim mình có cái embedding mình có cái embedding chỗ này mình chọn cái số lượng từ là 2000 từ chẳng hạn cái này là Ad lấy ví dụ 52 rồi chỗ này max length ví dụ một cái câu của mình là mình có độ dài bằng 200 cái này Ad để số 3000 cho khỏi lộ bằng max sequence length bằng 200 Chỗ này đẹp là 200 Chỗ này là 52 Hai cái này đều là embedding hết Trong paper gốc họ có một cách thức để sinh ra positional Nhưng mà cách đó hơi phức tạp, không cần thiết Bởi vì đơn giản là mình làm như vầy Nhiều khi cách này còn chạy tốt hơn Vì sau này người ta dùng cách này hết Chứ người ta không có dùng phương pháp, không có dùng scene code Cách đó ngày thứ 6, Dr"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "03:02:50",
+      "content": "Devon sẽ thảo luận cho các bạn Để vào ngày thứ 6 Còn trong thực tế mọi người dùng cách này. Nó đơn giản hơn và nó còn sẽ hiệu quả hơn. Nó lưu lại cái thông tin vị trí của từng từ. Rồi. Rồi sau đó chúng ta... Khi mà chúng ta có Input Us. Input Us này sẽ đi qua cái Word Embedding. Cứ gọi là mỗi từ nó sinh ra cho mình một vector, rồi đi qua cái Position"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "03:03:22",
+      "content": "No Embedding là mỗi vị trí xin cho mình 52 con số 2 này cộng lại thì nó ra cái Input này Từ Input này mình đưa qua cái này Đưa qua cái phần này Đi qua Attention, sau đó Norm Rồi đi qua Forward Rồi tính Norm, 2 này cộng lại cho nó Skip Connection Và chỗ này Ad làm 1 block, đưa qua submark luôn Độ chính xác đạt được 82% bởi vì mình trade từ đầu Ngày thứ 6 mình sẽ nói sâu hơn, đây ad nói về mặt ứng dụng là mình trade từ đầu Nhưng mà sau khi mình retrain, ad dùng mô hình bợt Mô hình bợt là mô hình mình trồng lên 64 lần Mình lấy cái retrain đó thì độ chính xác là 92% Bởi vì lúc đó BERT hay là cụ thể Transformer nó chỉ tốt khi mình có dữ liệu lớn Còn nếu mà mình chạy cho những mô hình cũ thì ví dụ đây là 87% cho AlexCM Còn này mình đạt được 92% Cái chỗ này thấp hơn là bởi vì dữ liệu ít nó không phát huy được nhiều khi nó còn có tác trụ ngược Cho nên là dữ liệu lớn mới phát huy, 92% Tương tự cho dữ liệu ở Twitter là mình có dữ liệu này mình đánh giá xem là cái phần tweet này nó có cũng là phần loại nhị phân, phần loại không một xem là là mấy cái tweet này nó có ý nghĩa là gì có hai loại ý nghĩa như vậy sau khi mà mình xử lý dữ liệu xong thì mình cũng làm tương tự y chang với cái khung này thì lúc này độ chính xác là 78% nếu mà train từ đầu và 81% nếu mà dùng retrain tại sao chỗ này tại sao chỗ kia là 92% chỗ này chỉ có 81% thôi là bởi vì cái dây liệu Twitter nó có cái cách thức trong cái phần comment của Twitter thông thường người ta cái cách phong cách nói chuyện nó cũng khác nó giống như là cái cái ảnh của mình nó rất khác với cái ảnh ImageNet cho nên là mình lấy cái retrain đó nó không có nhiều tác dụng tất nhiên nó vẫn có nhưng mà nó không có Nó không có nhiều, nó không có tốt như là những dữ liệu nói chuyện thông thường khác kiểu vậy Rồi, bài ngày hôm nay nó hơi nhiều Cho nên là nó sẽ Nó có nhiều thứ Thậm chí nó có một vài cái thứ khế cận như là hết bằng 2 trở lên là ác chưa nói Bởi vì lúc đó nói nó sẽ nhiều quá Thì ngày thứ và cái phần LayerNorm và cái cài đặt từng bước để cho cái bài TextListRassification.xml đi vô thì ngày thứ Sáu chúng ta sẽ tiếp tục thỏa luận phần đó"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "03:06:25",
+      "content": "Thì cái quan trọng nhất của buổi ngày hôm nay đó là các bạn về các bạn đọc 4 cái code này để làm cho cái bài đơn giản ở đây"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "03:06:39",
+      "content": "Và các bạn hiểu cái lõi của nó nó chính là cái công thức Submark DDT nhân cho bên ngoài là D còn tất cả những cái thứ mà mình làm sau này nó chính là mân họa thêm mân họa thêm để cho nó giống như là mình xây dựng một cái VGG mà từ cái gốc là Linux mình subset thấy là nó phù hợp với cái ngữ cảnh thì người ta thêm chứ còn cái lõi của nó vẫn là cái phần Cell Tension giúp một từ khi tổng hợp một từ thì nó kết nối với tất cả những từ khác và nó cho phép mình lấy bao nhiêu phần trăm từ khác lấy dữ liệu bản thân nó cho nên nó gọi là Cell Tension Rồi bây giờ chúng ta qua phần ca hút trước khi chúng ta kết thúc buổi ngày hôm nay nha các bạn Chúng ta làm luôn trong khoảng 3 phút Ash ơi, gánh của ANN khác với Atlassian không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "03:08:25",
+      "content": "Như nhầm, ANN với Atlassian là những cái cũ mà mình học cho biết thôi. Bây giờ là, đến cái NOP thì Ash sẽ nhắc lại và Ash sẽ cài đặt cho các bạn. Nhưng mà nếu mà dùng thì bây giờ mình dùng Retrain, dùng Transfer Learning của Transformer là cách tốt nhất. Kế hoạch của ngày thứ 6 cơ bản là vẫn như thế thôi nhưng mà ngày thứ 6 Ad định là tập trung nhiều vô Vision Transformer nhưng mà Ad sẽ nhờ Dr. Điền Vinh nói lại cái phần test, cái phần cài đặt một xíu. Rồi ok bạn học về. Rồi. Rồi anh ta bắt đầu hả? Anh ta làm luôn"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "03:09:20",
+      "content": "Bài này cực kỳ quan trọng và nó cũng rất là phức tạp cho nên các bạn về các bạn muốn hiểu hết các bạn xem code của Ad nha sau đó đọc cái bài reading của tuần này cái bài reading tuần này ngày mai Ad sẽ update version mà SCA nên có thêm cái phần multi-head vào Đó thì các bạn đọc xong cái đó nó có công thức nhân tri cộng trừ cụ thể toán trong đó luôn các bạn đọc xong là các bạn ok cái phần transformer luôn Mà đáng thêm phần đó Tạm biệt! Tạm biệt! Tạm biệt! Tạm biệt! Rồi, kết quả khác là gì ta? Chỗ này là.."
+    },
+    {
+      "name": "Speaker 1",
+      "time": "03:10:49",
+      "content": "Bởi vì cái embedding của mình là 20 cho nên nó sẽ có cái index từ 0 đến 19 Mà chỗ này mình lấy cái 19, mình lấy số 20 luôn, đâu có được Ý của Ad là như thế Mình có con số, cái từ nó có index là 20 Nhưng mà khi mình tạo ra cái embedding, mình bảo có 20 dòng thôi Vậy nó sẽ lấy index từ 0 đến 19 Cái này nó vượt của Ad rồi, cho nên không được Bạn hiểu bài rất là xấu Rồi Thì mình chuyển đổi 2 cái này thôi, đúng không? Ban đầu vị trí này là chữ 1 nè Đúng không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "03:12:09",
+      "content": "Vị trí này là ban đầu là chữ 2 Đó, mình transpose nó Transpose với vị trí chữ 1 và chữ 2 Thì kết quả của mình sẽ ra là đảo lại 2 cái này Giống như nãy mình tính là DT đó đúng không? DDT là mục tiêu của mình tính hồi nãy Transpose 2 cái chiều đó Chiều chữ 2 và chữ 1 Rồi, hồi nãy mình có tính submark cho từng dao đúng không? Cho nên mình để Axis bằng 1 đúng không? Axis bằng 1 cũng được, hoặc là bằng trừ 1 là nó lấy chiều cuối. Ở đây mình có 2 chiều, chiều 0 và chiều 1. Lấy chiều 1 tính là chiều cuối bằng 1. Lấy submark cho từng dao. Cho nên là tổng mỗi dao này sẽ bằng 1"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "03:13:34",
+      "content": "Bye bye mọi người có D có sẵn rồi, cho trước D rồi thì công thức này là self-attention lấy chính dữ liệu của mình tích vô hướng cho chính mình mà nó đâu cần tham số nữa đâu không có tham số nào nha các bạn mà nó chạy hồi nãy Adrean các bạn coi cái file nào đó, file 3.1 Adrean được 75% đó còn khi mà có tham số thì được 79% tăng được 4% cho nên là 75 cái 75 cái 79, cho nên là mình hiểu bản chất vấn đề của Transformer nó chính là cái Cell Console mà cụ thể là mình không cần KQV gì đó, KQV thì lúc anh ngồi, KQV nó có tác dụng gì, anh ngồi ngẫm ngẫm, nó tự code lại theo cái cách ad hiệu nên là nó phát hiện ra vấn đề là không cần, bản thân mình lấy chính cái đó mà làm được để mình hiểu được bản chất vấn đề, để sau này khi mà chúng ta đi giải quyết vấn đề khác là chúng ta có giải pháp đúng Tưởng tồng cái cục này nè Mấy câu này khó nha"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "03:15:54",
+      "content": "Bởi vì nguyên cái này nhân vô thì... Cái này đang tính anh thay 0 đúng không? Cho nên là cái chỗ này nó đang tính cho D0. Thì cái chỗ này nhân cho 1 là nó giữ lại cái phần tự đầu tiên thôi. Ý là muốn cái phần đầu tiên nó có các xuất bao nhiêu phần trăm. Thì nó không phải bằng 1. Nó là một con số nào đó bất kỳ từ 0 đến 1"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "03:16:17",
+      "content": "Câu hỏi này liên quan đến phần Max Attention thì lúc này mình chưa học thế nào mình học đến cái bài liên quan đến cái bài dịch thì lúc này mình mới học có Transformer đầy đủ Rồi Ok, khó ha Bây giờ chứng tỏ là có thể năm sau sẽ tắt cái bài Transformer là thành 2 bài hoặc là sẽ thêm một cái bổi trang farmer nữa vào module tới Rồi Rồi chúc mừng bạn là Pro00, bạn là Trung Hiếu Bạn là Alpertine Ok cảm ơn các bạn Rồi Chắc là Ad sẽ thảo luận với Dr"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "03:17:29",
+      "content": "Đinh Vân để Ad trình sửa nội dung xíu xíu Có thể là buổi tới mình sẽ với Vân nói về Tax Classification kỹ hơn Và tập trung vô Transformer thôi Xin lỗi, tập trung vô VAT Không nói thêm cái phần Series chẳng hạn Time Series Rồi module sau có thêm một buổi nữa để Để đi sâu hơn tại vì hiện tại bây giờ Giống như cái bài này thì Ad gửi cho các bạn khoảng 15-20 15 phai code này thì thường thì ad cài nhiều năm mà riêng cái buổi này là ad làm 3 ngày liền đó cho nên là ad revise lại 3 ngày liền cho nên là các bạn mà muốn hiểu hết cái này thì cũng phải mất 1 tuần kiểu vậy thì phía sau tốc độ họ cần phải đòi họ như thế nhưng mà nhiều khi nếu mà nhanh quá thì cũng không được cho nên là khúc transformer này quan trọng để add thêm 1 cái bổi nữa vào chamfermer cũng được nó sẽ rơi vô module sau nó kéo giảm phần chamfermer là xíu vì chamfermer rất quan trọng rồi ok vậy là add chào các bạn các bạn có có hỏi gì không"
+    },
+    {
+      "name": "Speaker 1",
+      "time": "03:18:40",
+      "content": "Phần ngày hôm nay mình kết thúc ở chỗ này các bạn cố gắng xem video lại 1 lần nữa nhé nếu mà các bạn chưa hiểu hết Ok, các bạn không hỏi gì thế, chào các bạn, hẹn gặp lại các bạn vào tuần tới Chúc các bạn giáng sân ngày mai thật vui Ngày mai không có nhiều bạn được nghỉ đúng không? Chúc các bạn ngày nghỉ."
+    }
+  ]
+}

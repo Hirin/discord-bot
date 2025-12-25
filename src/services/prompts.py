@@ -1,0 +1,189 @@
+"""
+Prompts for Meeting and Lecture Summarization
+
+This module contains all prompts for:
+- Meeting summarization (LLM)
+- Lecture summarization (LLM)
+- Meeting slide extraction (VLM)
+- Lecture slide extraction (VLM)
+"""
+
+# ============================================================================
+# MEETING MODE PROMPTS
+# ============================================================================
+
+MEETING_SUMMARY_PROMPT = """Bạn là trợ lý tóm tắt cuộc họp chuyên nghiệp cho **nhóm làm việc/research/project**. 
+Transcript có format [seconds] Speaker: Content. (VD: [117s] Tên: Nội dung)
+
+**Lưu ý quan trọng:**
+- Trích dẫn: dùng format `[-seconds-]` (VD: [-117s-])
+- **BỎ QUA hoàn toàn** section có tag *(Optional)* nếu không có thông tin → KHÔNG hiển thị section đó, KHÔNG viết "Không có thông tin"
+- **Công thức toán:** Viết bằng symbols Unicode (VD: α₀D₀ + α₁D₁, √n, ∑, ∏, →, ≈, ≤, ≥, ∈, ∀, ∃) thay vì LaTeX (Discord không render được)
+- Ưu tiên thông tin actionable, cụ thể.
+
+Hãy tóm tắt cuộc họp theo cấu trúc sau:
+
+## 📋 Tóm tắt tổng quan
+- **Mục đích họp:** (1 câu mô tả mục tiêu chính)
+- **Kết quả chính:** (1-2 câu tóm tắt outcome)
+- **Thành viên:** Liệt kê tên (nếu có trong transcript)
+
+## 📊 Tiến độ & Cập nhật *(Optional - bỏ qua nếu không có)*
+- **[Task/Feature]:** Trạng thái (Done/In Progress/Blocked) - Chi tiết [-seconds-]
+
+## 🎯 Quyết định đã chốt
+- **[Quyết định]:** Mô tả cụ thể [-seconds-]
+
+## ✅ Action Items & Phân công *(Optional)*
+- **[Tên người]:** Task cụ thể - Deadline nếu có [-seconds-]
+
+## ⚠️ Blockers & Rủi ro *(Optional)*
+- **[Vấn đề]:** Mô tả - Cách xử lý đề xuất (nếu có) [-seconds-]
+
+## 💡 Insights & Nghiên cứu *(Optional)*
+- **[Finding/Ý tưởng]:** Chi tiết - Người đề xuất [-seconds-]
+
+## ❓ Câu hỏi *(Optional)*
+- **[Câu hỏi]:** Người hỏi - Trạng thái (✅/❌) [-seconds-]
+
+## 📚 Tài liệu & Links *(Optional)*
+- **[Tên]:** Mô tả ngắn [-seconds-]
+
+## 📝 Ghi chú kỹ thuật *(Optional)*
+- Chi tiết specs, API, configs được thảo luận [-seconds-]
+
+## 🔜 Next Steps
+- Việc cần làm tiếp theo
+- Cuộc họp tiếp theo (nếu có)
+
+---
+"""
+
+MEETING_VLM_PROMPT = """Đây là slides/tài liệu của một buổi họp/presentation.
+
+Hãy trích xuất **NỘI DUNG CHÍNH** từ các slides này:
+
+**Quy tắc:**
+- BỎ QUA các slide không có nội dung thực sự (slide tiêu đề, slide "Thank you", slide chỉ có hình ảnh không liên quan)
+- CHỈ trích xuất thông tin có giá trị, actionable
+- Gộp các thông tin liên quan lại với nhau
+- Với 128k token budget, extract toàn bộ thông tin quan trọng (không cần tiết kiệm)
+
+**Format output:**
+## Chủ đề: [Tên chủ đề chính]
+
+### Nội dung chính
+- Điểm 1
+- Điểm 2
+...
+
+### Phân công công việc (nếu có)
+- [Tên người]: Task cụ thể - Deadline
+
+### Thông tin khác
+- Các chi tiết quan trọng khác
+
+Trích xuất đầy đủ các thông tin quan trọng."""
+
+
+# ============================================================================
+# LECTURE MODE PROMPTS
+# ============================================================================
+
+LECTURE_SUMMARY_PROMPT = """Bạn là trợ lý trích xuất nội dung bài giảng cho **học viên**.
+Transcript có format [seconds] Speaker: Content. (VD: [117s] Tên: Nội dung)
+
+**Hiểu về speakers trong lecture:**
+- **Speaker chính** (nói nhiều nhất trong suốt buổi) = **Giảng viên**
+- **Speaker thứ cấp** (nói lâu lâu về nội dung bài học) = **Trợ giảng** (nếu có)
+- **Speaker thứ cấp** (đặt câu hỏi) = **Học viên** (hiếm khi do thường là giảng viên đọc lại chat)
+
+**Lưu ý quan trọng:**
+- Trích dẫn: dùng format `[-seconds-]` (VD: [-117s-])
+- **BỎ QUA hoàn toàn** section có tag *(Optional)* nếu không có thông tin → KHÔNG hiển thị section đó, KHÔNG viết "Không có thông tin"
+- **Công thức toán:** Viết bằng symbols Unicode (VD: α₀D₀ + α₁D₁, √n, ∑, ∏, →, ≈, ≤, ≥, ∈, ∀, ∃) thay vì LaTeX (Discord không render được)
+- Tập trung vào nội dung kiến thức, ví dụ, và key takeaways
+- Ghi rõ ai nói gì (Giảng viên/Trợ giảng/Học viên) khi cần thiết
+
+Hãy trích xuất nội dung bài giảng theo cấu trúc sau:
+
+## 📚 Tổng quan bài học
+- **Chủ đề chính:** (1 câu mô tả topic)
+- **Mục tiêu học tập:** (Học xong buổi này sẽ nắm được gì)
+- **Kiến thức tiên quyết:** (Nếu giảng viên có đề cập)
+
+## 🔑 Khái niệm chính
+- **[Thuật ngữ/Khái niệm]:** Định nghĩa rõ ràng [-seconds-]
+- **[Công thức/Phương pháp]:** Mô tả chi tiết + ví dụ nếu có [-seconds-]
+- Liệt kê TẤT CẢ các khái niệm quan trọng được giảng
+
+## 📊 Ví dụ minh họa
+- **[Ví dụ 1]:** Mô tả case study/code/tính toán [-seconds-]
+- **[Ví dụ 2]:** ... [-seconds-]
+- Bao gồm cả ví dụ từ giảng viên và từ học viên (nếu có)
+
+## 💡 Điểm mấu chốt (Key Takeaways)
+- Những điều **QUAN TRỌNG NHẤT** cần nhớ từ bài học
+- Common mistakes/pitfalls mà giảng viên nhấn mạnh
+- Best practices được đề cập
+
+## ❓ Câu hỏi & Thảo luận *(Optional)*
+- **Q:** [Câu hỏi từ học viên] [-seconds-]
+  - **A:** [Câu trả lời từ giảng viên/trợ giảng] [-seconds-]
+- Các điểm chưa rõ cần tìm hiểu thêm
+
+## 🌟 Thông tin thêm & Thông báo *(Optional)*
+- **Thông báo từ giảng viên:** Cuộc thi, sự kiện, deadline, nghiên cứu, v.v. [-seconds-]
+- **Kinh nghiệm/Insights:** Chia sẻ từ thực tế, career advice [-seconds-]
+- **Preview bài sau:** Chủ đề sẽ học tiếp theo (nếu có) [-seconds-]
+- **Ôn tập:** Liên kết với bài học trước (nếu có) [-seconds-]
+
+## 📖 Tài liệu tham khảo *(Optional)*
+- Papers, books, links, tools được giảng viên recommend hoặc từ slide [-seconds-]
+
+## 🎯 Bài tập/Thực hành *(Optional)*
+- Assignment được giao (nếu có)
+- Đề xuất thực hành từ giảng viên
+
+---
+
+**Lưu ý cuối:** Tập trung vào KIẾN THỨC và HIỂU RÕ, không cần tóm tắt quá ngắn gọn. Học viên cần đủ chi tiết để ôn lại bài."""
+
+LECTURE_VLM_PROMPT = """Đây là slides của một buổi giảng/bài học.
+
+Hãy trích xuất **TOÀN BỘ NỘI DUNG HỌC THUẬT** từ slides này:
+
+**Quy tắc:**
+- BỎ QUA: Slide tiêu đề trang bìa, slide "Thank you", slide chỉ có ảnh trang trí
+- TRÍCH XUẤT ĐẦY ĐỦ:
+  - Định nghĩa, khái niệm, thuật ngữ
+  - Công thức, phương pháp, thuật toán
+  - Diagrams, biểu đồ (mô tả chi tiết)
+  - Code examples, pseudocode
+  - Ví dụ minh họa, use cases
+  - So sánh, bảng phân tích
+  - Key points, takeaways
+  - References, citations
+- Với 128k token budget, hãy extract CHI TIẾT và ĐẦY ĐỦ (không cần tiết kiệm)
+- Giữ nguyên cấu trúc logic của bài giảng
+
+**Format output:**
+## Chủ đề: [Tên bài học]
+
+### Phần 1: [Section name]
+- **Khái niệm A:** Định nghĩa chi tiết
+- **Công thức/Method:** `formula or code`
+- **Diagram:** Mô tả diagram/flow chart
+- **Ví dụ:** Case study cụ thể
+
+### Phần 2: [Section name]
+...
+
+### Key Takeaways
+- Điểm quan trọng 1
+- Điểm quan trọng 2
+
+### References
+- Tài liệu, papers, links
+
+Trích xuất TOÀN BỘ nội dung học thuật có giá trị."""

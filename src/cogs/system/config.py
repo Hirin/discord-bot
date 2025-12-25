@@ -10,28 +10,7 @@ from discord.ext import commands
 from services import config as config_service
 
 
-class ConfigModal(discord.ui.Modal, title="Set Custom Prompt"):
-    """Modal for entering custom prompt"""
-
-    prompt = discord.ui.TextInput(
-        label="Custom Prompt",
-        style=discord.TextStyle.paragraph,
-        placeholder="Bạn là trợ lý tóm tắt cuộc họp...",
-        max_length=2000,
-    )
-
-    def __init__(self, guild_id: int):
-        super().__init__()
-        self.guild_id = guild_id
-
-    async def on_submit(self, interaction: discord.Interaction):
-        config_service.set_guild_config(
-            self.guild_id, "custom_prompt", self.prompt.value
-        )
-        await interaction.response.send_message(
-            f"✅ Custom prompt đã lưu!\n```{self.prompt.value[:200]}...```",
-            ephemeral=True,
-        )
+# Note: Old ConfigModal removed - replaced by PromptEditModal (per-mode/per-type)
 
 
 class ApiModal(discord.ui.Modal, title="Set API Key"):
@@ -140,6 +119,205 @@ class FirefliesLimitModal(discord.ui.Modal, title="Fireflies Storage Limit"):
         )
 
 
+# === New Nested Button Views ===
+
+
+class ApiKeySelectionView(discord.ui.View):
+    """Select which API key to set"""
+
+    def __init__(self, guild_id: int):
+        super().__init__(timeout=60)
+        self.guild_id = guild_id
+
+    @discord.ui.button(label="🔑 GLM API", style=discord.ButtonStyle.primary)
+    async def glm_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(ApiModal(self.guild_id, "glm"))
+
+    @discord.ui.button(label="🔥 Fireflies API", style=discord.ButtonStyle.success)
+    async def fireflies_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(ApiModal(self.guild_id, "fireflies"))
+
+    @discord.ui.button(label="❌ Đóng", style=discord.ButtonStyle.danger)
+    async def close_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.edit_message(content="✅ Đã đóng", view=None)
+
+
+class ChannelTypeSelectionView(discord.ui.View):
+    """Select channel type to set"""
+
+    def __init__(self, guild_id: int):
+        super().__init__(timeout=60)
+        self.guild_id = guild_id
+
+    @discord.ui.button(label="📋 Meeting Channel", style=discord.ButtonStyle.primary)
+    async def meeting_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        config_service.set_meetings_channel(self.guild_id, interaction.channel_id)
+        await interaction.response.send_message(
+            f"✅ Đã set kênh này làm **Meetings Channel**!\n"
+            f"Bot sẽ gửi summary vào <#{interaction.channel_id}>",
+            ephemeral=True,
+        )
+
+    @discord.ui.button(label="📁 Archive Channel", style=discord.ButtonStyle.success)
+    async def archive_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        config_service.set_archive_channel(self.guild_id, interaction.channel_id)
+        await interaction.response.send_message(
+            f"✅ Đã set kênh này làm **Archive Channel**!\n"
+            f"Transcripts backup sẽ lưu vào <#{interaction.channel_id}>",
+            ephemeral=True,
+        )
+
+    @discord.ui.button(label="❌ Đóng", style=discord.ButtonStyle.danger)
+    async def close_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.edit_message(content="✅ Đã đóng", view=None)
+
+
+class PromptModeSelectionView(discord.ui.View):
+    """Step 1: Select Meeting or Lecture mode"""
+
+    def __init__(self, guild_id: int):
+        super().__init__(timeout=60)
+        self.guild_id = guild_id
+
+    @discord.ui.button(label="📋 Meeting", style=discord.ButtonStyle.primary)
+    async def meeting_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = PromptTypeSelectionView(self.guild_id, mode="meeting")
+        await interaction.response.edit_message(
+            content="**Manage Prompts** - Chọn loại prompt (Meeting mode):",
+            view=view
+        )
+
+    @discord.ui.button(label="📚 Lecture", style=discord.ButtonStyle.success)
+    async def lecture_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = PromptTypeSelectionView(self.guild_id, mode="lecture")
+        await interaction.response.edit_message(
+            content="**Manage Prompts** - Chọn loại prompt (Lecture mode):",
+            view=view
+        )
+
+    @discord.ui.button(label="❌ Đóng", style=discord.ButtonStyle.danger)
+    async def close_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.edit_message(content="✅ Đã đóng", view=None)
+
+
+class PromptTypeSelectionView(discord.ui.View):
+    """Step 2: Select VLM or Summary prompt"""
+
+    def __init__(self, guild_id: int, mode: str):
+        super().__init__(timeout=60)
+        self.guild_id = guild_id
+        self.mode = mode
+
+    @discord.ui.button(label="📄 Slide Extractor (VLM)", style=discord.ButtonStyle.primary)
+    async def vlm_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = PromptActionSelectionView(self.guild_id, self.mode, prompt_type="vlm")
+        mode_label = "Meeting" if self.mode == "meeting" else "Lecture"
+        await interaction.response.edit_message(
+            content=f"**Manage Prompts** - {mode_label} VLM - Chọn hành động:",
+            view=view
+        )
+
+    @discord.ui.button(label="📝 Summary (LLM)", style=discord.ButtonStyle.success)
+    async def summary_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = PromptActionSelectionView(self.guild_id, self.mode, prompt_type="summary")
+        mode_label = "Meeting" if self.mode == "meeting" else "Lecture"
+        await interaction.response.edit_message(
+            content=f"**Manage Prompts** - {mode_label} Summary - Chọn hành động:",
+            view=view
+        )
+
+    @discord.ui.button(label="❌ Đóng", style=discord.ButtonStyle.danger)
+    async def close_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.edit_message(content="✅ Đã đóng", view=None)
+
+
+class PromptActionSelectionView(discord.ui.View):
+    """Step 3: Reset, Edit, or View the prompt"""
+
+    def __init__(self, guild_id: int, mode: str, prompt_type: str):
+        super().__init__(timeout=60)
+        self.guild_id = guild_id
+        self.mode = mode
+        self.prompt_type = prompt_type
+
+    def _get_labels(self) -> tuple[str, str]:
+        mode_label = "Meeting" if self.mode == "meeting" else "Lecture"
+        type_label = "VLM" if self.prompt_type == "vlm" else "Summary"
+        return mode_label, type_label
+
+    @discord.ui.button(label="🔄 Reset Default", style=discord.ButtonStyle.danger)
+    async def reset_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        config_service.reset_prompt(self.guild_id, self.mode, self.prompt_type)
+        mode_label, type_label = self._get_labels()
+        await interaction.response.send_message(
+            f"✅ Đã reset **{mode_label} {type_label}** prompt về mặc định!",
+            ephemeral=True,
+        )
+
+    @discord.ui.button(label="✏️ Edit", style=discord.ButtonStyle.primary)
+    async def edit_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(
+            PromptEditModal(self.guild_id, self.mode, self.prompt_type)
+        )
+
+    @discord.ui.button(label="👁️ View", style=discord.ButtonStyle.secondary)
+    async def view_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        prompt_text = config_service.get_prompt(self.guild_id, self.mode, self.prompt_type)
+        mode_label, type_label = self._get_labels()
+        
+        # Check if custom or default
+        config = config_service.get_guild_config(self.guild_id)
+        key = f"{self.mode}_{self.prompt_type}_prompt"
+        is_custom = bool(config.get(key))
+        status = "Custom ✏️" if is_custom else "Default ⚙️"
+        
+        # Send to channel (may be long)
+        header = f"**{mode_label} {type_label} Prompt** ({status}, {len(prompt_text)} chars)\n"
+        content = f"{header}```\n{prompt_text[:1800]}{'...' if len(prompt_text) > 1800 else ''}\n```"
+        await interaction.response.send_message(content, ephemeral=True)
+
+    @discord.ui.button(label="❌ Đóng", style=discord.ButtonStyle.danger)
+    async def close_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.edit_message(content="✅ Đã đóng", view=None)
+
+
+class PromptEditModal(discord.ui.Modal):
+    """Modal for editing a specific prompt"""
+
+    def __init__(self, guild_id: int, mode: str, prompt_type: str):
+        mode_label = "Meeting" if mode == "meeting" else "Lecture"
+        type_label = "VLM" if prompt_type == "vlm" else "Summary"
+        super().__init__(title=f"Edit {mode_label} {type_label} Prompt")
+        
+        self.guild_id = guild_id
+        self.mode = mode
+        self.prompt_type = prompt_type
+        
+        # Get current prompt
+        current = config_service.get_prompt(guild_id, mode, prompt_type)
+        
+        self.prompt_input = discord.ui.TextInput(
+            label=f"Prompt ({len(current)} chars)",
+            style=discord.TextStyle.paragraph,
+            default=current[:4000],  # Modal limit
+            required=True,
+            max_length=4000
+        )
+        self.add_item(self.prompt_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        new_prompt = self.prompt_input.value.strip()
+        config_service.set_prompt(self.guild_id, self.mode, self.prompt_type, new_prompt)
+        
+        mode_label = "Meeting" if self.mode == "meeting" else "Lecture"
+        type_label = "VLM" if self.prompt_type == "vlm" else "Summary"
+        
+        await interaction.response.send_message(
+            f"✅ Đã lưu **{mode_label} {type_label}** prompt ({len(new_prompt)} chars)",
+            ephemeral=True,
+        )
+
+
 class ConfigView(discord.ui.View):
     """Dropdown view for config actions"""
 
@@ -150,27 +328,13 @@ class ConfigView(discord.ui.View):
     @discord.ui.select(
         placeholder="Chọn action...",
         options=[
-            discord.SelectOption(label="Set GLM API Key", value="api_glm"),
-            discord.SelectOption(label="Set Fireflies API Key", value="api_fireflies"),
-            discord.SelectOption(label="Custom Prompt", value="prompt_set"),
-            discord.SelectOption(label="View Prompt", value="prompt_view"),
-            discord.SelectOption(label="Reset Prompt", value="prompt_reset"),
-            discord.SelectOption(label="View Config", value="info"),
-            discord.SelectOption(
-                label="Set This Channel For Meetings", value="set_channel"
-            ),
-            discord.SelectOption(
-                label="Custom Timezone", value="timezone"
-            ),
-            discord.SelectOption(
-                label="📁 Set Archive Channel", value="set_archive"
-            ),
-            discord.SelectOption(
-                label="📼 Fireflies Storage Limit", value="ff_limit"
-            ),
-            discord.SelectOption(
-                label="🔄 Sync Commands", value="sync_commands"
-            ),
+            discord.SelectOption(label="🔑 Set API Keys", value="api_keys"),
+            discord.SelectOption(label="📍 Set This Channel For...", value="set_channel"),
+            discord.SelectOption(label="📝 Manage Prompts", value="manage_prompts"),
+            discord.SelectOption(label="⚙️ View Config", value="info"),
+            discord.SelectOption(label="🕐 Custom Timezone", value="timezone"),
+            discord.SelectOption(label="📼 Fireflies Storage Limit", value="ff_limit"),
+            discord.SelectOption(label="🔄 Sync Commands", value="sync_commands"),
         ],
     )
     async def select_action(
@@ -178,88 +342,107 @@ class ConfigView(discord.ui.View):
     ):
         action = select.values[0]
 
-        if action == "api_glm":
-            await interaction.response.send_modal(ApiModal(self.guild_id, "glm"))
-
-        elif action == "api_fireflies":
-            await interaction.response.send_modal(ApiModal(self.guild_id, "fireflies"))
-
-        elif action == "prompt_set":
-            await interaction.response.send_modal(ConfigModal(self.guild_id))
-
-        elif action == "prompt_view":
-            prompt = config_service.get_custom_prompt(self.guild_id)
-            is_custom = bool(
-                config_service.get_guild_config(self.guild_id).get("custom_prompt")
-            )
+        if action == "api_keys":
+            # Show API key selection buttons
+            view = ApiKeySelectionView(self.guild_id)
             await interaction.response.send_message(
-                f"**{'Custom' if is_custom else 'Default'} Prompt:**\n```{prompt[:1500]}```",
+                "🔑 **Set API Keys** - Chọn loại API:",
+                view=view,
                 ephemeral=True,
             )
 
-        elif action == "prompt_reset":
-            config_service.set_guild_config(self.guild_id, "custom_prompt", "")
+        elif action == "set_channel":
+            # Show channel type selection buttons
+            view = ChannelTypeSelectionView(self.guild_id)
             await interaction.response.send_message(
-                "✅ Reset về prompt mặc định!", ephemeral=True
+                f"📍 **Set This Channel** (<#{interaction.channel_id}>) - Chọn loại:",
+                view=view,
+                ephemeral=True,
+            )
+
+        elif action == "manage_prompts":
+            # Show prompt mode selection (Step 1)
+            view = PromptModeSelectionView(self.guild_id)
+            await interaction.response.send_message(
+                "📝 **Manage Prompts** - Chọn chế độ:",
+                view=view,
+                ephemeral=True,
             )
 
         elif action == "info":
             config = config_service.get_guild_config(self.guild_id)
             glm = config.get("glm_api_key")
             ff = config.get("fireflies_api_key")
-            has_prompt = bool(config.get("custom_prompt"))
             channel_id = config.get("meetings_channel")
             timezone = config_service.get_timezone(self.guild_id)
+            archive_id = config_service.get_archive_channel(self.guild_id)
+            ff_limit = config_service.get_fireflies_max_records(self.guild_id)
 
-            embed = discord.Embed(title="⚙️ Server Config", color=discord.Color.blue())
+            # Build prompt status for all 4 prompts
+            def prompt_status(mode: str, ptype: str) -> str:
+                key = f"{mode}_{ptype}_prompt"
+                is_custom = bool(config.get(key))
+                if is_custom:
+                    return f"Custom ✏️ ({len(config.get(key, ''))} chars)"
+                return "Default ⚙️"
+
+            embed = discord.Embed(
+                title="⚙️ Server Configuration",
+                color=discord.Color.blue()
+            )
+            
+            # API Connections
             embed.add_field(
-                name="API Keys",
-                value=f"GLM: {'✅' if glm else '❌'} | Fireflies: {'✅' if ff else '❌'}",
+                name="📡 API Connections",
+                value=(
+                    f"• GLM: {'✅ Configured' if glm else '❌ Not set'}\n"
+                    f"• Fireflies: {'✅ Configured' if ff else '❌ Not set'}"
+                ),
                 inline=False,
             )
+            
+            # Prompts (4 total)
             embed.add_field(
-                name="Prompt",
-                value="Custom ✅" if has_prompt else "Default",
+                name="📝 Meeting Prompts",
+                value=(
+                    f"• VLM: {prompt_status('meeting', 'vlm')}\n"
+                    f"• Summary: {prompt_status('meeting', 'summary')}"
+                ),
                 inline=True,
             )
             embed.add_field(
-                name="Timezone",
-                value=f"`{timezone}`",
+                name="📚 Lecture Prompts",
+                value=(
+                    f"• VLM: {prompt_status('lecture', 'vlm')}\n"
+                    f"• Summary: {prompt_status('lecture', 'summary')}"
+                ),
                 inline=True,
             )
+            
+            # Channels
             embed.add_field(
-                name="Meetings Channel",
-                value=f"<#{channel_id}>" if channel_id else "Not set",
-                inline=True,
+                name="📍 Channels",
+                value=(
+                    f"• Meetings: {f'<#{channel_id}>' if channel_id else 'Not set'}\n"
+                    f"• Archive: {f'<#{archive_id}>' if archive_id else 'Not set'}"
+                ),
+                inline=False,
             )
-            archive_id = config_service.get_archive_channel(self.guild_id)
+            
+            # Settings
             embed.add_field(
-                name="Archive Channel",
-                value=f"<#{archive_id}>" if archive_id else "Not set",
-                inline=True,
+                name="⚙️ Settings",
+                value=(
+                    f"• Timezone: `{timezone}`\n"
+                    f"• Fireflies Limit: `{ff_limit}` records"
+                ),
+                inline=False,
             )
+            
             await interaction.response.send_message(embed=embed, ephemeral=True)
-
-        elif action == "set_channel":
-            # Set current channel as meetings channel
-            config_service.set_meetings_channel(self.guild_id, interaction.channel_id)
-            await interaction.response.send_message(
-                f"✅ Đã set kênh này làm Meetings Channel!\n"
-                f"Bot sẽ tự động gửi summary vào <#{interaction.channel_id}>",
-                ephemeral=True,
-            )
 
         elif action == "timezone":
             await interaction.response.send_modal(TimezoneModal(self.guild_id))
-
-        elif action == "set_archive":
-            # Set current channel as archive channel
-            config_service.set_archive_channel(self.guild_id, interaction.channel_id)
-            await interaction.response.send_message(
-                f"✅ Đã set kênh này làm Archive Channel!\n"
-                f"Transcripts sẽ được backup vào <#{interaction.channel_id}>",
-                ephemeral=True,
-            )
 
         elif action == "ff_limit":
             await interaction.response.send_modal(FirefliesLimitModal(self.guild_id))

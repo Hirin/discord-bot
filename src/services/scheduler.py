@@ -413,7 +413,16 @@ async def run_scheduler(bot):
 
             # === 3. Daily cleanup of old transcripts (4 months) ===
             if (now - last_cleanup).days >= 1:
+                logger.info("Running daily cleanup...")
+                
+                # Cleanup old transcripts (120 days)
                 transcript_storage.cleanup_old_transcripts(max_age_days=120)
+                
+                # Cleanup expired slide caches (24h TTL)
+                from services import slide_cache
+                slide_cache.cleanup_expired_caches()
+                
+                logger.info("Daily cleanup completed")
                 last_cleanup = now
 
         except Exception as e:

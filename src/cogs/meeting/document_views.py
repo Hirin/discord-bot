@@ -7,7 +7,8 @@ import logging
 
 import discord
 
-from services import llm
+from services import llm, slide_cache
+from services.prompts import MEETING_VLM_PROMPT, LECTURE_VLM_PROMPT
 from utils.document_utils import pdf_to_images, validate_attachment
 
 logger = logging.getLogger(__name__)
@@ -47,23 +48,28 @@ async def prompt_for_document(
     interaction: discord.Interaction,
     bot,
     guild_id: int,
+    mode: str = "meeting",
 ) -> str | None:
     """
-    Prompt user for optional document upload and extract glossary.
+    Prompt user for optional document upload and extract slide content.
     
     Args:
         interaction: Discord interaction (must be deferred)
         bot: Discord bot instance
         guild_id: Guild ID for API key
+        mode: "meeting" or "lecture" - determines extraction focus
         
     Returns:
-        Extracted glossary text or None
+        Extracted slide content text or None
     """
+    # Get VLM prompt for cache key
+    vlm_prompt = LECTURE_VLM_PROMPT if mode == "lecture" else MEETING_VLM_PROMPT
+    
     # Send prompt with buttons
     view = DocumentPromptView()
     prompt_msg = await interaction.followup.send(
         "📎 **Có bổ sung tài liệu?**\n"
-        "Trích xuất glossary & key points để summary chi tiết hơn",
+        "Trích xuất nội dung slides để summary chi tiết hơn",
         view=view,
         ephemeral=True,
     )
@@ -91,41 +97,124 @@ async def prompt_for_document(
     try:
         msg = await bot.wait_for("message", check=check, timeout=90)
         attachment = msg.attachments[0]
+        filename = attachment.filename
 
         # Validate file
         is_valid, error = validate_attachment(attachment)
         if not is_valid:
             await interaction.followup.send(f"❌ {error}", ephemeral=True)
             return None
-
-        # Download and process
-        await interaction.followup.send("⏳ Đang xử lý tài liệu...", ephemeral=True)
         
-        file_bytes = await attachment.read()
-        images = pdf_to_images(file_bytes)
-
-        if not images:
+        # Check cache BEFORE downloading (save bandwidth)
+        cached_content = slide_cache.get_cached_slide_content(filename, vlm_prompt)
+        if cached_content:
+            # Delete message immediately
+            try:
+                await msg.delete()
+            except Exception:
+                pass
+            
             await interaction.followup.send(
-                "❌ Không thể đọc PDF", ephemeral=True
+                f"✅ Sử dụng cache ({len(cached_content)} chars) ⚡",
+                ephemeral=True
             )
-            return None
+            return cached_content
 
-        # Extract glossary using Vision model
-        glossary = await llm.extract_glossary_vision(images, guild_id)
-
-        # Clean up user's message with attachment
+        # Download file - create editable status message
+        status_msg = await interaction.followup.send(
+            "⏳ Đang tải tài liệu...", 
+            ephemeral=True,
+            wait=True
+        )
+        file_bytes = await attachment.read()
+        
+        # Delete user's message with attachment immediately after download
         try:
             await msg.delete()
         except Exception:
             pass
 
-        if glossary:
-            await interaction.followup.send(
-                f"✅ Đã trích xuất glossary ({len(glossary)} chars)",
-                ephemeral=True,
-            )
+        # Update status for processing
+        try:
+            await status_msg.edit(content="⏳ Đang xử lý tài liệu...")
+        except Exception:
+            pass
 
-        return glossary
+        # Process file (convert PDF to images)
+        images = pdf_to_images(file_bytes)
+
+        if not images:
+            try:
+                await status_msg.edit(content="❌ Không thể đọc PDF")
+            except Exception:
+                pass
+            return None
+
+        # Update status for VLM extraction
+        try:
+            await status_msg.edit(content="⏳ Đang trích xuất nội dung slides (2-5 phút)...")
+        except Exception:
+            pass
+
+        # Extract slide content using Vision model
+        slide_content = await llm.extract_slide_content(images, guild_id, mode=mode)
+
+        # Check for VLM error
+        if slide_content and slide_content.startswith("⚠️ VLM"):
+            # Import ErrorRetryView here to avoid circular import
+            from cogs.meeting.modals import ErrorRetryView
+            
+            # Create retry callback
+            async def retry_vlm(retry_interaction, **kwargs):
+                try:
+                    new_content = await llm.extract_slide_content(
+                        kwargs["images"],
+                        kwargs["guild_id"],
+                        mode=kwargs.get("mode", "meeting")
+                    )
+                    if new_content and not new_content.startswith("⚠️ VLM"):
+                        slide_cache.save_slide_content_cache(
+                            kwargs["filename"], kwargs["vlm_prompt"], new_content
+                        )
+                        await retry_interaction.followup.send(
+                            f"✅ Retry thành công! ({len(new_content)} chars)",
+                            ephemeral=True
+                        )
+                        # Can't return content, but it's cached now
+                    else:
+                        await retry_interaction.followup.send(
+                            f"❌ Retry failed: {new_content or 'No content'}",
+                            ephemeral=True
+                        )
+                except Exception as err:
+                    await retry_interaction.followup.send(f"❌ Retry error: {err}", ephemeral=True)
+            
+            retry_args = {
+                "images": images,
+                "guild_id": guild_id,
+                "mode": mode,
+                "filename": filename,
+                "vlm_prompt": vlm_prompt,
+            }
+            view = ErrorRetryView(retry_vlm, retry_args)
+            
+            try:
+                await status_msg.edit(content=f"❌ VLM Error:\n{slide_content}", view=view)
+            except Exception:
+                pass
+            return None  # Return None so summarize proceeds without slides
+
+        # Save to cache and update status
+        if slide_content:
+            slide_cache.save_slide_content_cache(filename, vlm_prompt, slide_content)
+            try:
+                await status_msg.edit(
+                    content=f"✅ Đã trích xuất slides ({len(slide_content)} chars) - cache 24h"
+                )
+            except Exception:
+                pass
+
+        return slide_content
 
     except asyncio.TimeoutError:
         await interaction.followup.send(

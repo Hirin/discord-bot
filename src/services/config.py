@@ -86,55 +86,102 @@ def mask_key(key: str) -> str:
     return f"{key[:4]}...{key[-4:]}"
 
 
-DEFAULT_PROMPT = """Bạn là trợ lý tóm tắt cuộc họp chuyên nghiệp cho **nhóm làm việc/research/project**. 
-Transcript có format [seconds] Speaker: Content. (VD: [117s] Tên: Nội dung)
-**Lưu ý:**
-- Trích dẫn: dùng format `[-seconds-]` (VD: [-117s-])
-- **BỎ QUA hoàn toàn** section có tag *(Optional)* nếu không có thông tin liên quan, KHÔNG chế thông tin.
-- Ưu tiên thông tin actionable, cụ thể.
-Hãy tóm tắt cuộc họp theo cấu trúc sau:
-
-## 📋 Tóm tắt tổng quan
-- **Mục đích họp:** (1 câu mô tả mục tiêu chính)
-- **Kết quả chính:** (1-2 câu tóm tắt outcome)
-- **Thành viên:** Liệt kê tên (nếu có trong transcript)
-
-## 📊 Tiến độ & Cập nhật *(Optional - bỏ qua nếu không có)*
-- **[Task/Feature]:** Trạng thái (Done/In Progress/Blocked) - Chi tiết [-seconds-]
-
-## 🎯 Quyết định đã chốt
-- **[Quyết định]:** Mô tả cụ thể [-seconds-]
-
-## ✅ Action Items & Phân công *(Optional)*
-- **[Tên người]:** Task cụ thể - Deadline nếu có [-seconds-]
-
-## ⚠️ Blockers & Rủi ro *(Optional)*
-- **[Vấn đề]:** Mô tả - Cách xử lý đề xuất (nếu có) [-seconds-]
-
-## 💡 Insights & Nghiên cứu *(Optional)*
-- **[Finding/Ý tưởng]:** Chi tiết - Người đề xuất [-seconds-]
-
-## ❓ Câu hỏi*(Optional)*
-- **[Câu hỏi]:** Người hỏi - Trạng thái (✅/❌) [-seconds-]
-
-## 📚 Tài liệu & Links *(Optional)*
-- **[Tên]:** Mô tả ngắn [-seconds-]
-
-## 📝 Ghi chú kỹ thuật *(Optional)*
-- Chi tiết specs, API, configs được thảo luận [-seconds-]
-
-## 🔜 Next Steps
-- Việc cần làm tiếp theo
-- Cuộc họp tiếp theo (nếu có)
-
----
-"""
-
 
 def get_custom_prompt(guild_id: int) -> str:
-    """Get custom prompt for a guild, fallback to default"""
+    """
+    Get custom prompt for a guild, fallback to default meeting prompt
+    
+    DEPRECATED: Use get_prompt(guild_id, "meeting", "summary") instead
+    Kept for backward compatibility
+    """
+    from services.prompts import MEETING_SUMMARY_PROMPT
+    
     config = get_guild_config(guild_id)
-    return config.get("custom_prompt") or DEFAULT_PROMPT
+    # Check new config key first, fallback to old custom_prompt
+    return (
+        config.get("meeting_summary_prompt") 
+        or config.get("custom_prompt") 
+        or MEETING_SUMMARY_PROMPT
+    )
+
+
+def get_prompt(guild_id: int, mode: str, prompt_type: str) -> str:
+    """
+    Get prompt with fallback to default
+    
+    Args:
+        guild_id: Guild ID
+        mode: "meeting" or "lecture"
+        prompt_type: "vlm" or "summary"
+    
+    Returns:
+        Custom prompt or default from prompts.py
+    """
+    from services.prompts import (
+        MEETING_VLM_PROMPT, MEETING_SUMMARY_PROMPT,
+        LECTURE_VLM_PROMPT, LECTURE_SUMMARY_PROMPT
+    )
+    
+    config = get_guild_config(guild_id)
+    
+    # Map to config key
+    key = f"{mode}_{prompt_type}_prompt"
+    
+    # Defaults
+    defaults = {
+        "meeting_vlm": MEETING_VLM_PROMPT,
+        "meeting_summary": MEETING_SUMMARY_PROMPT,
+        "lecture_vlm": LECTURE_VLM_PROMPT,
+        "lecture_summary": LECTURE_SUMMARY_PROMPT,
+    }
+    
+    default_key = f"{mode}_{prompt_type}"
+    
+    # Get custom or default
+    custom = config.get(key)
+    if custom:
+        return custom
+    
+    # Backward compatibility: old custom_prompt -> meeting_summary
+    if mode == "meeting" and prompt_type == "summary":
+        old_custom = config.get("custom_prompt")
+        if old_custom:
+            return old_custom
+    
+    return defaults.get(default_key, "")
+
+
+def set_prompt(guild_id: int, mode: str, prompt_type: str, value: str):
+    """
+    Set custom prompt
+    
+    Args:
+        guild_id: Guild ID
+        mode: "meeting" or "lecture"
+        prompt_type: "vlm" or "summary"
+        value: Prompt text
+    """
+    key = f"{mode}_{prompt_type}_prompt"
+    set_guild_config(guild_id, key, value)
+
+
+def reset_prompt(guild_id: int, mode: str, prompt_type: str):
+    """
+    Reset prompt to default (delete custom)
+    
+    Args:
+        guild_id: Guild ID
+        mode: "meeting" or "lecture"
+        prompt_type: "vlm" or "summary"
+    """
+    configs = _load_configs()
+    guild_key = str(guild_id)
+    
+    if guild_key in configs:
+        key = f"{mode}_{prompt_type}_prompt"
+        if key in configs[guild_key]:
+            del configs[guild_key][key]
+            _save_configs(configs)
 
 
 def get_meetings_channel(guild_id: int) -> Optional[int]:

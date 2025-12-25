@@ -29,69 +29,60 @@ def get_client(guild_id: Optional[int] = None) -> OpenAI:
     )
 
 
-async def extract_glossary_vision(
+async def extract_slide_content(
     image_base64_list: list[str],
     guild_id: Optional[int] = None,
     timeout: int = 120,
     retries: int = 3,
+    mode: str = "meeting",
 ) -> Optional[str]:
     """
-    Extract glossary and key terms from document images using GLM-4.6V-Flash.
+    Extract comprehensive content from slides (not just glossary).
+    
+    With 128k token budget, we can extract FULL slide content including:
+    - Definitions, formulas, code blocks
+    - Diagrams and visual explanations
+    - Examples and use cases
+    - All relevant information for context injection
 
     Args:
         image_base64_list: List of base64 encoded PNG images
         guild_id: Guild ID for guild-specific API key
         timeout: Timeout in seconds
         retries: Number of retry attempts
+        mode: "meeting" or "lecture" - determines extraction focus
 
     Returns:
-        Extracted glossary text or None if failed
+        Extracted slide content or None if failed
     """
     if not image_base64_list:
         return None
-
+    from services import config as config_service
+    
     model = os.getenv("GLM_VISION_MODEL", "glm-4.6v-flash")
     client = get_client(guild_id)
+    
+    # Get VLM prompt from config (allows per-guild customization)
+    vlm_prompt = config_service.get_prompt(
+        guild_id, 
+        mode=mode, 
+        prompt_type="vlm"
+    )
 
-    # Build content with images (GLM-4.6V supports up to 200 pages)
+    # Build content with images
     content = []
-    for img in image_base64_list:
+    for img_b64 in image_base64_list:
         content.append({
             "type": "image_url",
-            "image_url": {"url": f"data:image/png;base64,{img}"}
+            "image_url": {"url": f"data:image/png;base64,{img_b64}"},
         })
-
-    content.append({
-        "type": "text",
-        "text": """Đây là slides/tài liệu của một buổi họp/presentation.
-
-Hãy trích xuất NỘI DUNG CHÍNH từ các slides này:
-
-**Quy tắc:**
-- BỎ QUA các slide không có nội dung thực sự (slide tiêu đề, slide "Thank you", slide chỉ có hình ảnh không liên quan)
-- CHỈ trích xuất thông tin có giá trị, actionable
-- Gộp các thông tin liên quan lại với nhau
-
-**Format output:**
-## Chủ đề: [Tên chủ đề chính]
-
-### Nội dung chính
-- Điểm 1
-- Điểm 2
-...
-
-### Phân công công việc (nếu có)
-- [Tên người]: Task cụ thể - Deadline
-
-### Thông tin khác
-- Các chi tiết quan trọng khác
-
-Trích xuất đầy đủ các thông tin quan trọng."""
-    })
+    
+    # Append prompt at the end
+    content.append({"type": "text", "text": vlm_prompt})
 
     for attempt in range(retries):
         try:
-            logger.info(f"Extracting glossary from {len(image_base64_list)} pages (attempt {attempt + 1})...")
+            logger.info(f"Extracting slide content ({mode} mode) from {len(image_base64_list)} pages (attempt {attempt + 1})...")
 
             loop = asyncio.get_event_loop()
             completion = await loop.run_in_executor(
@@ -104,58 +95,65 @@ Trích xuất đầy đủ các thông tin quan trọng."""
                 ),
             )
 
-            glossary = completion.choices[0].message.content
-            logger.info(f"Glossary extracted: {len(glossary)} chars")
-            return glossary
+            slide_content = completion.choices[0].message.content
+            logger.info(f"Slide content extracted ({mode} mode): {len(slide_content)} chars")
+            return slide_content
 
         except Exception as e:
+            last_error = str(e)
             logger.error(f"Vision attempt {attempt + 1} failed: {e}")
             if attempt < retries - 1:
                 backoff = 5 * (attempt + 1)  # 5s, 10s, 15s
                 logger.info(f"Retrying in {backoff}s...")
                 await asyncio.sleep(backoff)
 
-    return None
+    # Return error message instead of None
+    return f"⚠️ VLM Error: {last_error[:200]}"
 
 
 async def summarize_transcript(
     transcript: str,
     guild_id: Optional[int] = None,
-    glossary: Optional[str] = None,
+    slide_content: Optional[str] = None,
     timeout: int = 60,
     retries: int = 3,
+    mode: str = "meeting",
 ) -> Optional[str]:
     """
-    Summarize a meeting transcript using GLM API.
-
+    Summarize transcript with optional slide content context.
+    
     Args:
-        transcript: Full transcript text
-        guild_id: Guild ID for guild-specific API key
-        glossary: Optional glossary/context from uploaded document
+        transcript: Meeting/lecture transcript text
+        guild_id: Guild ID for guild-specific config
+        slide_content: Full extracted content from slides (comprehensive extraction)
+                      Thanks to 128k token budget, we can include everything relevant
         timeout: Timeout in seconds
         retries: Number of retry attempts
-
+        mode: "meeting" or "lecture" - determines summarization style
+    
     Returns:
         Summary text or error message
     """
+    from services import config as config_service
+    
     model = os.getenv("GLM_MODEL", "glm-4.6")
     client = get_client(guild_id)
-
-    # Get custom prompt or default
-    system_prompt = (
-        config_service.get_custom_prompt(guild_id)
-        if guild_id
-        else config_service.DEFAULT_PROMPT
+    
+    # Get summary prompt from config (allows per-guild customization)
+    system_prompt = config_service.get_prompt(
+        guild_id,
+        mode=mode,
+        prompt_type="summary"
     )
 
-    # Inject glossary context if provided
-    if glossary:
-        system_prompt += f"\n\n## Tài liệu tham khảo:\n{glossary[:5000]}"
+    # Inject slide content context if provided (no length limit needed with 128k)
+    if slide_content:
+        system_prompt += f"\n\n## Nội dung từ Slides:\n{slide_content}"
 
     last_error = "Unknown error"
     for attempt in range(retries):
         try:
-            logger.info(f"Summarizing transcript (attempt {attempt + 1})...")
+            logger.info(f"Summarizing transcript ({mode} mode) (attempt {attempt + 1})...")
 
             # Run sync client in thread pool
             loop = asyncio.get_event_loop()
@@ -176,6 +174,17 @@ async def summarize_transcript(
             )
 
             summary = completion.choices[0].message.content
+            
+            # Check for empty response and retry
+            if not summary or not summary.strip():
+                logger.warning(f"LLM returned empty summary (attempt {attempt + 1})")
+                if attempt < retries - 1:
+                    backoff = 5 * (attempt + 1)
+                    logger.info(f"Retrying in {backoff}s...")
+                    await asyncio.sleep(backoff)
+                    continue
+                return "⚠️ LLM trả về summary rỗng sau nhiều lần thử"
+            
             logger.info(f"Summary generated: {len(summary)} chars")
             return summary
 

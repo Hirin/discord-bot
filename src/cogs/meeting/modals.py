@@ -14,6 +14,61 @@ from utils.discord_utils import send_chunked
 logger = logging.getLogger(__name__)
 
 
+class ModeSelectionView(discord.ui.View):
+    """View with buttons to select Meeting or Lecture mode"""
+    
+    def __init__(self):
+        super().__init__(timeout=60)  # 60 seconds timeout
+        self.selected_mode = "meeting"  # Default to meeting mode
+        
+    @discord.ui.button(label="📋 Meeting", style=discord.ButtonStyle.primary, custom_id="mode_meeting")
+    async def meeting_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.selected_mode = "meeting"
+        await interaction.response.send_message(
+            "✅ Đã chọn: **Meeting** mode (tóm tắt cuộc họp)", 
+            ephemeral=True
+        )
+        self.stop()
+    
+    @discord.ui.button(label="📚 Lecture", style=discord.ButtonStyle.success, custom_id="mode_lecture")
+    async def lecture_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.selected_mode = "lecture"
+        await interaction.response.send_message(
+            "✅ Đã chọn: **Lecture** mode (trích xuất bài giảng)", 
+            ephemeral=True
+        )
+        self.stop()
+
+
+class ErrorRetryView(discord.ui.View):
+    """View with Retry and Close buttons for error messages"""
+    
+    def __init__(self, retry_callback, retry_args: dict):
+        super().__init__(timeout=300)  # 5 minutes timeout
+        self.retry_callback = retry_callback
+        self.retry_args = retry_args
+        self.retried = False
+        
+    @discord.ui.button(label="🔄 Retry", style=discord.ButtonStyle.primary)
+    async def retry_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.retried:
+            await interaction.response.send_message("⚠️ Đã retry rồi!", ephemeral=True)
+            return
+            
+        self.retried = True
+        # Disable buttons after retry
+        for item in self.children:
+            item.disabled = True
+        await interaction.response.edit_message(content="🔄 Đang retry...", view=self)
+        
+        # Execute retry callback
+        await self.retry_callback(interaction, **self.retry_args)
+    
+    @discord.ui.button(label="❌ Đóng", style=discord.ButtonStyle.danger)
+    async def close_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.edit_message(content="✅ Đã đóng", view=None)
+
+
 class MeetingIdModal(discord.ui.Modal, title="Meeting Summary"):
     """Modal for entering meeting ID, local ID, or URL"""
 
@@ -47,10 +102,26 @@ class MeetingIdModal(discord.ui.Modal, title="Meeting Summary"):
             scraped_title = None
             from_backup = False
             
-            # Prompt for optional document FIRST (instant feedback)
+            # NEW: Ask user to select mode (Meeting or Lecture)
+            mode_view = ModeSelectionView()
+            mode_msg = await interaction.followup.send(
+                "📝 Chọn loại nội dung cần tóm tắt:", 
+                view=mode_view, 
+                ephemeral=True
+            )
+            await mode_view.wait()
+            mode = mode_view.selected_mode
+            
+            # Delete mode selection message
+            try:
+                await mode_msg.delete()
+            except Exception:
+                pass
+            
+            # Prompt for optional document (instant feedback)
             from .document_views import prompt_for_document
-            glossary = await prompt_for_document(
-                interaction, interaction.client, self.guild_id
+            slide_content = await prompt_for_document(
+                interaction, interaction.client, self.guild_id, mode
             )
             
             # Show processing message (will be deleted when done)
@@ -108,11 +179,11 @@ class MeetingIdModal(discord.ui.Modal, title="Meeting Summary"):
                 )
                 return
 
-            # Generate summary with glossary context
+            # Generate summary with slide content context
             # Use seconds format for LLM
             transcript_text = fireflies.format_transcript_for_llm(transcript_data)
             summary = await llm.summarize_transcript(
-                transcript_text, guild_id=self.guild_id, glossary=glossary
+                transcript_text, guild_id=self.guild_id, slide_content=slide_content, mode=mode
             )
             
             # Delete processing message
@@ -155,35 +226,62 @@ class MeetingIdModal(discord.ui.Modal, title="Meeting Summary"):
             else:
                 entry_id = transcript_id
 
-            # Build summary with Fireflies link if available
+
+            # Build summary header
             source_tag = " (từ backup)" if from_backup else ""
             header = f"📋 **{title}**{source_tag} (ID: `{entry_id}`)\n"
             
-            # Add Fireflies link based on source
-            footer = ""
-            ff_link_for_processing = ""
+            # Check if LLM returned an error
+            if summary and summary.startswith("⚠️ LLM"):
+                # Create retry callback
+                async def retry_summary(retry_interaction, **kwargs):
+                    try:
+                        new_summary = await llm.summarize_transcript(
+                            kwargs["transcript_text"],
+                            guild_id=kwargs["guild_id"],
+                            slide_content=kwargs.get("slide_content"),
+                            mode=kwargs.get("mode", "meeting")
+                        )
+                        if new_summary and not new_summary.startswith("⚠️ LLM"):
+                            await send_chunked(retry_interaction.channel, kwargs["header"] + new_summary)
+                        else:
+                            await retry_interaction.followup.send(
+                                f"{kwargs['header']}\n{new_summary or '⚠️ Retry failed'}",
+                                ephemeral=True
+                            )
+                    except Exception as err:
+                        await retry_interaction.followup.send(f"❌ Retry error: {err}", ephemeral=True)
+                
+                # Show error with retry buttons
+                retry_args = {
+                    "transcript_text": transcript_text,
+                    "guild_id": self.guild_id,
+                    "slide_content": slide_content,
+                    "mode": mode,
+                    "header": header,
+                }
+                view = ErrorRetryView(retry_summary, retry_args)
+                await interaction.channel.send(f"{header}\n{summary}", view=view)
+                return
             
+            # Process summary timestamps: [-123s-] -> [MM:SS](link) if we have a link
+            ff_link_for_processing = ""
             if original_url:
-                # Shared link - use original URL
-                footer = f"\n\n🔗 [Xem recording]({original_url})"
                 ff_link_for_processing = original_url
             elif fireflies_id:
-                # Fireflies ID - generate link
-                ff_link = fireflies_api.generate_fireflies_link(title, fireflies_id)
-                footer = f"\n\n🔗 [Xem recording]({ff_link})"
-                ff_link_for_processing = ff_link
+                ff_link_for_processing = fireflies_api.generate_fireflies_link(title, fireflies_id)
                 
-            # Process summary timestamps: [-123s-] -> [MM:SS](link)
             if summary and ff_link_for_processing:
                 summary = fireflies.process_summary_timestamps(summary, ff_link_for_processing)
             
             # Send summary to channel (not reply) to avoid deletion issues
-            # We already acknowledged via defer(), and maybe sent ephemeral updates.
-            # Use send_chunked with interaction.channel
-            await send_chunked(interaction.channel, header + summary + footer)
-            
-            # Notify user ephemerally that it's done
-            await interaction.followup.send("✅ Summary sent to channel!", ephemeral=True)
+            if summary:
+                await send_chunked(interaction.channel, header + summary)
+            else:
+                await interaction.followup.send(
+                    f"⚠️ Summary trống - LLM không trả về nội dung\n{header}",
+                    ephemeral=True
+                )
 
         except Exception as e:
             logger.exception("Error in meeting summary")
