@@ -22,3 +22,10 @@ data/
 
 # Local scripts (not needed in production)
 scripts/
+
+# Test files
+test_*.py
+*.mp4
+gemini_*.md
+
+cookies.txt

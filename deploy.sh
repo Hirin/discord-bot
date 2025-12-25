@@ -10,7 +10,12 @@ KEY="${AWS_KEY:-~/.ssh/aws-key.pem}"
 REMOTE_DIR="${AWS_REMOTE_DIR:-/home/ubuntu/discord-bot}"
 
 echo "📦 Syncing code to AWS..."
-rsync -avz --exclude '.git' --exclude '.venv' --exclude 'data' --exclude '__pycache__' \
+rsync -avz \
+    --exclude '.git' \
+    --exclude '.venv' \
+    --exclude 'data' \
+    --exclude '__pycache__' \
+    --exclude '*.mp4' \
     -e "ssh -i $KEY" \
     ./ $HOST:$REMOTE_DIR/
 
@@ -29,6 +34,11 @@ fi
 echo "Installing dependencies..."
 ~/.local/bin/uv venv --quiet
 ~/.local/bin/uv pip install -r requirements.txt --quiet
+
+# Install yt-dlp and ffmpeg for video processing
+echo "Installing yt-dlp and ffmpeg..."
+~/.local/bin/uv pip install yt-dlp --quiet
+sudo apt-get install -y ffmpeg --quiet 2>/dev/null || true
 
 # Install playwright browsers
 echo "Installing Playwright..."

@@ -1,6 +1,7 @@
 """
 Guild Config Service
 Store and retrieve per-guild configuration (API keys, settings)
+Also supports per-user settings (e.g., Gemini API key)
 """
 
 import json
@@ -10,8 +11,9 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-# Config file path
+# Config file paths
 CONFIG_FILE = Path(__file__).parent.parent.parent / "data" / "guild_configs.json"
+USER_CONFIG_FILE = Path(__file__).parent.parent.parent / "data" / "user_configs.json"
 
 
 def _ensure_config_file():
@@ -71,6 +73,7 @@ def get_api_key(guild_id: int, key_type: str) -> Optional[str]:
     env_mapping = {
         "glm": "GLM_API_KEY",
         "fireflies": "FIREFLIES_API_KEY",
+        "gemini": "GEMINI_API_KEY",
     }
     env_var = env_mapping.get(key_type)
     if env_var:
@@ -84,6 +87,62 @@ def mask_key(key: str) -> str:
     if not key or len(key) < 8:
         return "***"
     return f"{key[:4]}...{key[-4:]}"
+
+
+# ============================================================================
+# PER-USER CONFIG (for rate-limited APIs like Gemini)
+# ============================================================================
+
+def _ensure_user_config_file():
+    """Ensure user config file exists"""
+    USER_CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
+    if not USER_CONFIG_FILE.exists():
+        USER_CONFIG_FILE.write_text("{}")
+
+
+def _load_user_configs() -> dict:
+    """Load all user configs"""
+    _ensure_user_config_file()
+    try:
+        return json.loads(USER_CONFIG_FILE.read_text())
+    except Exception as e:
+        logger.error(f"Failed to load user configs: {e}")
+        return {}
+
+
+def _save_user_configs(configs: dict):
+    """Save all user configs"""
+    _ensure_user_config_file()
+    USER_CONFIG_FILE.write_text(json.dumps(configs, indent=2))
+
+
+def get_user_gemini_api(user_id: int) -> Optional[str]:
+    """Get user's personal Gemini API key"""
+    import os
+    
+    configs = _load_user_configs()
+    user_key = str(user_id)
+    
+    # Try user-specific key first
+    user_config = configs.get(user_key, {})
+    if user_config.get("gemini_api_key"):
+        return user_config["gemini_api_key"]
+    
+    # Fallback to environment variable
+    return os.getenv("GEMINI_API_KEY")
+
+
+def set_user_gemini_api(user_id: int, api_key: str):
+    """Set user's personal Gemini API key"""
+    configs = _load_user_configs()
+    user_key = str(user_id)
+    
+    if user_key not in configs:
+        configs[user_key] = {}
+    
+    configs[user_key]["gemini_api_key"] = api_key
+    _save_user_configs(configs)
+    logger.info(f"Gemini API key set for user {user_id}")
 
 
 
@@ -111,15 +170,16 @@ def get_prompt(guild_id: int, mode: str, prompt_type: str) -> str:
     
     Args:
         guild_id: Guild ID
-        mode: "meeting" or "lecture"
-        prompt_type: "vlm" or "summary"
+        mode: "meeting", "lecture", or "gemini"
+        prompt_type: "vlm", "summary", "lecture_part1", "lecture_part_n", "merge"
     
     Returns:
         Custom prompt or default from prompts.py
     """
     from services.prompts import (
         MEETING_VLM_PROMPT, MEETING_SUMMARY_PROMPT,
-        LECTURE_VLM_PROMPT, LECTURE_SUMMARY_PROMPT
+        LECTURE_VLM_PROMPT, LECTURE_SUMMARY_PROMPT,
+        GEMINI_LECTURE_PROMPT_PART1, GEMINI_LECTURE_PROMPT_PART_N, GEMINI_MERGE_PROMPT
     )
     
     config = get_guild_config(guild_id)
@@ -133,9 +193,13 @@ def get_prompt(guild_id: int, mode: str, prompt_type: str) -> str:
         "meeting_summary": MEETING_SUMMARY_PROMPT,
         "lecture_vlm": LECTURE_VLM_PROMPT,
         "lecture_summary": LECTURE_SUMMARY_PROMPT,
+        "gemini_lecture_part1": GEMINI_LECTURE_PROMPT_PART1,
+        "gemini_lecture_part_n": GEMINI_LECTURE_PROMPT_PART_N,
+        "gemini_merge": GEMINI_MERGE_PROMPT,
     }
     
     default_key = f"{mode}_{prompt_type}"
+
     
     # Get custom or default
     custom = config.get(key)

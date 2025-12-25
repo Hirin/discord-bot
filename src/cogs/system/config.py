@@ -195,6 +195,50 @@ class PromptModeSelectionView(discord.ui.View):
             view=view
         )
 
+    @discord.ui.button(label="🎬 Gemini Video", style=discord.ButtonStyle.secondary)
+    async def gemini_video_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = GeminiPromptTypeSelectionView(self.guild_id)
+        await interaction.response.edit_message(
+            content="**Manage Prompts** - Chọn loại prompt (Gemini Video mode):",
+            view=view
+        )
+
+    @discord.ui.button(label="❌ Đóng", style=discord.ButtonStyle.danger)
+    async def close_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.edit_message(content="✅ Đã đóng", view=None)
+
+
+class GeminiPromptTypeSelectionView(discord.ui.View):
+    """Select Gemini prompt type: Part 1, Part N, or Merge"""
+
+    def __init__(self, guild_id: int):
+        super().__init__(timeout=60)
+        self.guild_id = guild_id
+
+    @discord.ui.button(label="1️⃣ Part 1 Prompt", style=discord.ButtonStyle.primary)
+    async def part1_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = PromptActionSelectionView(self.guild_id, mode="gemini", prompt_type="lecture_part1")
+        await interaction.response.edit_message(
+            content="**Manage Prompts** - Gemini Part 1 - Chọn hành động:",
+            view=view
+        )
+
+    @discord.ui.button(label="🔢 Part N Prompt", style=discord.ButtonStyle.primary)
+    async def part_n_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = PromptActionSelectionView(self.guild_id, mode="gemini", prompt_type="lecture_part_n")
+        await interaction.response.edit_message(
+            content="**Manage Prompts** - Gemini Part N - Chọn hành động:",
+            view=view
+        )
+
+    @discord.ui.button(label="🔗 Merge Prompt", style=discord.ButtonStyle.success)
+    async def merge_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = PromptActionSelectionView(self.guild_id, mode="gemini", prompt_type="merge")
+        await interaction.response.edit_message(
+            content="**Manage Prompts** - Gemini Merge - Chọn hành động:",
+            view=view
+        )
+
     @discord.ui.button(label="❌ Đóng", style=discord.ButtonStyle.danger)
     async def close_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.edit_message(content="✅ Đã đóng", view=None)

@@ -187,3 +187,123 @@ Hãy trích xuất **TOÀN BỘ NỘI DUNG HỌC THUẬT** từ slides này:
 - Tài liệu, papers, links
 
 Trích xuất TOÀN BỘ nội dung học thuật có giá trị."""
+
+
+# ============================================================================
+# GEMINI VIDEO LECTURE PROMPTS
+# ============================================================================
+
+GEMINI_LECTURE_PROMPT_PART1 = """Bạn là trợ lý trích xuất nội dung bài giảng từ VIDEO cho học viên.
+
+**Video này bắt đầu từ 0:00.**
+
+**Lưu ý quan trọng:**
+- Timestamps dùng format `[-SECONDSs-]` với SECONDS là số giây (VD: [-330s-] cho 5:30, [-5025s-] cho 1:23:45)
+- **BỎ QUA hoàn toàn** section không có thông tin
+- **Công thức toán:** Viết bằng symbols Unicode (α, β, ∑, √, →, ≈, ≤, ≥) thay vì LaTeX
+
+Hãy trích xuất CHI TIẾT nội dung bài giảng theo cấu trúc:
+
+## 📚 Tổng quan
+- **Chủ đề:** (1 câu mô tả topic)
+- **Mục tiêu học tập:** (Học xong buổi này sẽ nắm được gì)
+
+## 🔑 Khái niệm chính
+- **[Khái niệm]:** Định nghĩa rõ ràng [-SECONDSs-]
+
+## 📊 Ví dụ minh họa
+- **[Ví dụ]:** Mô tả case study/code/tính toán [-SECONDSs-]
+
+## 💡 Key Takeaways
+- Điểm quan trọng nhất cần nhớ
+
+## ❓ Q&A *(nếu có)*
+- **Q:** Câu hỏi [-SECONDSs-]
+  - **A:** Trả lời
+
+Trích xuất ĐẦY ĐỦ và CHI TIẾT."""
+
+
+GEMINI_LECTURE_PROMPT_PART_N = """Bạn là trợ lý trích xuất nội dung bài giảng từ VIDEO cho học viên.
+
+**Video này bắt đầu từ {start_time} giây (tiếp theo của phần trước).**
+**Timestamps ghi theo thời gian THỰC của video gốc bằng số giây (VD: nếu video bắt đầu từ 3600s, thì phút đầu của phần này ghi là [-3600s-]).**
+- **Công thức toán:** Viết bằng symbols Unicode (α, β, ∑, √, →, ≈, ≤, ≥) thay vì LaTeX
+
+**TÓM TẮT CÁC PHẦN TRƯỚC:**
+{previous_context}
+
+---
+
+**Lưu ý quan trọng:**
+- Timestamps dùng format `[-SECONDSs-]` với SECONDS là số giây thực của video gốc
+- **BỎ QUA** section không có thông tin
+- **Công thức toán:** Dùng Unicode symbols
+- **KHÔNG lặp lại** nội dung đã có trong phần trước
+
+Tiếp tục trích xuất NỘI DUNG MỚI trong phần này:
+
+## 🔑 Khái niệm mới
+- **[Khái niệm]:** Định nghĩa [-SECONDSs-]
+
+## 📊 Ví dụ mới
+- **[Ví dụ]:** Mô tả [-SECONDSs-]
+
+## 💡 Key Takeaways bổ sung
+- Điểm quan trọng mới
+
+## ❓ Q&A mới *(nếu có)*
+
+Chỉ trích xuất nội dung MỚI, không lặp lại phần trước."""
+
+
+GEMINI_MERGE_PROMPT = """
+**Quy tắc format QUAN TRỌNG:**
+- Timestamps dùng format `[-SECONDSs-]` với SECONDS là số giây (VD: [-930s-] cho 15:30)
+- Công thức toán dùng Unicode symbols (α, β, ∑, √, →, ≈, ≤, ≥) thay vì LaTeX
+- Viết CHI TIẾT và ĐẦY ĐỦ để học viên có thể ôn lại mà không cần xem lại video
+
+---
+Dưới đây là tổng hợp từ nhiều phần của một bài giảng dài.
+
+{parts_summary}
+
+---
+
+Hãy tổng hợp thành MỘT bài HOÀN CHỈNH và CHI TIẾT:
+
+## 📚 Tổng quan bài học
+- **Chủ đề chính:** (Mô tả đầy đủ topic của buổi học)
+- **Mục tiêu:** (Sau buổi học này, học viên sẽ nắm được gì)
+- **Phạm vi:** (Các nội dung được cover)
+
+## 🔑 Tất cả khái niệm chính
+*Liệt kê CHI TIẾT tất cả khái niệm theo thứ tự bài giảng:*
+
+**1. [Tên phần/Section]**
+- **Khái niệm A:** Định nghĩa ĐẦY ĐỦ [-SECONDSs-]
+- **Khái niệm B:** Giải thích rõ ràng [-SECONDSs-]
+
+**2. [Tên phần tiếp theo]**
+- ...
+
+## 📊 Các ví dụ minh họa quan trọng
+- **Ví dụ 1:** Mô tả chi tiết case study, tính toán, hoặc demo [-SECONDSs-]
+- **Ví dụ 2:** ... [-SECONDSs-]
+
+## 💡 Key Takeaways tổng hợp
+- Điểm quan trọng 1 (giải thích ngắn gọn tại sao quan trọng)
+- Điểm quan trọng 2 ...
+- Common mistakes/pitfalls cần tránh
+
+## ❓ Q&A
+- **Q:** Câu hỏi từ học viên? [-SECONDSs-]
+- **A:** Trả lời chi tiết
+
+## 📂 Mục lục (Table of Contents)
+- Tên section/topic [-SECONDSs-]
+- Tên section tiếp theo [-SECONDSs-]
+- ...
+"""
+
+
