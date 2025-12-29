@@ -10,7 +10,6 @@ from dataclasses import dataclass
 
 from services import gemini, video_download, prompts
 from services import slides as slides_service
-from utils.discord_utils import send_chunked
 
 logger = logging.getLogger(__name__)
 
@@ -191,13 +190,15 @@ class PreviewProcessor:
                     if msg.content.lower().strip() == 'done':
                         try:
                             await msg.delete()
-                        except:
+                        except Exception:
                             pass
                         break
                     
                     # Process PDF attachment
+                    pdf_found = False
                     for attachment in msg.attachments:
                         if attachment.filename.lower().endswith('.pdf') and len(collected) < 5:
+                            pdf_found = True
                             file_path = f"/tmp/preview_{self.user_id}_{len(collected)}_{attachment.filename}"
                             file_bytes = await attachment.read()
                             
@@ -216,10 +217,18 @@ class PreviewProcessor:
                                 f"Tiếp tục upload hoặc gửi `done` để xử lý."
                             )
                     
+                    # Show error if no PDF found but files were attached
+                    if not pdf_found and msg.attachments:
+                        file_ext = msg.attachments[0].filename.split('.')[-1] if '.' in msg.attachments[0].filename else 'unknown'
+                        await self.update_status(
+                            f"⚠️ File `.{file_ext}` không hợp lệ - chỉ nhận **PDF** (.pdf)\n"
+                            f"Đã nhận {len(collected)} file(s). Tiếp tục upload PDF hoặc gửi `done`."
+                        )
+                    
                     # Delete user's message
                     try:
                         await msg.delete()
-                    except:
+                    except Exception:
                         pass
                     
                 except asyncio.TimeoutError:

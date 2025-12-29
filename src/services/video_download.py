@@ -177,6 +177,13 @@ async def _save_response_to_file(
     file_size = os.path.getsize(output_path)
     logger.info(f"Downloaded: {output_path} ({file_size / 1024 / 1024:.1f}MB)")
     
+    # Validate downloaded file is not an HTML error page
+    with open(output_path, 'rb') as f:
+        header = f.read(20)
+        if header.startswith(b'<!DOCTYPE') or header.startswith(b'<html'):
+            os.remove(output_path)
+            raise RuntimeError("Download failed: received HTML page instead of file. Check that the link is shared publicly.")
+    
     return output_path
 
 

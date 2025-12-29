@@ -14,8 +14,7 @@ import hashlib
 import re
 import os
 from pathlib import Path
-from typing import Optional, Any
-from dataclasses import dataclass, asdict
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -102,8 +101,15 @@ def generate_pipeline_id(
 # Pipeline Cache Functions
 # ====================================
 
-def get_pipeline_cache(cache_id: str) -> Optional[dict]:
-    """Load full pipeline cache, returns None if expired or not found"""
+def get_pipeline_cache(cache_id: str, ignore_expiry_for_transcript: bool = True) -> Optional[dict]:
+    """
+    Load full pipeline cache, returns None if expired or not found.
+    
+    Args:
+        cache_id: Cache ID
+        ignore_expiry_for_transcript: If True, don't expire caches containing transcript
+                                     (since transcript is expensive and keyed by API key)
+    """
     cache_path = _get_cache_path(cache_id)
     
     if not cache_path.exists():
@@ -113,7 +119,15 @@ def get_pipeline_cache(cache_id: str) -> Optional[dict]:
         with open(cache_path, "r") as f:
             cache = json.load(f)
         
-        # Check expiry
+        # Check if cache has any transcript stage (keyed by API key hash)
+        stages = cache.get("stages", {})
+        has_transcript = any(s.startswith("transcript") for s in stages.keys())
+        
+        # Don't expire if has transcript and ignore_expiry enabled
+        if has_transcript and ignore_expiry_for_transcript:
+            return cache
+        
+        # Check expiry for non-transcript caches
         created_at = cache.get("created_at", 0)
         if time.time() - created_at > CACHE_EXPIRY_SECONDS:
             logger.info(f"Pipeline cache expired for {cache_id}")

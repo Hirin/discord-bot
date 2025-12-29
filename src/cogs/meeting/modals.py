@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 import discord
 
-from services import fireflies, fireflies_api, llm, scheduler, transcript_storage
+from services import fireflies, fireflies_api, gemini, llm, scheduler, transcript_storage
 from utils.discord_utils import send_chunked
 
 logger = logging.getLogger(__name__)
@@ -183,7 +183,11 @@ class MeetingIdModal(discord.ui.Modal, title="Meeting Summary"):
             # Use seconds format for LLM
             transcript_text = fireflies.format_transcript_for_llm(transcript_data)
             summary = await llm.summarize_transcript(
-                transcript_text, guild_id=self.guild_id, slide_content=slide_content, mode=mode
+                transcript_text, 
+                guild_id=self.guild_id, 
+                user_id=interaction.user.id,
+                slide_content=slide_content, 
+                mode=mode
             )
             
             # Delete processing message
@@ -212,8 +216,9 @@ class MeetingIdModal(discord.ui.Modal, title="Meeting Summary"):
             if not from_backup:
                 entry, is_new = transcript_storage.save_transcript(
                     guild_id=self.guild_id,
-                    fireflies_id=transcript_id,
+                    transcript_id=transcript_id,
                     title=title,
+                    platform="ff",
                     transcript_data=transcript_data,
                 )
 
@@ -239,10 +244,12 @@ class MeetingIdModal(discord.ui.Modal, title="Meeting Summary"):
                         new_summary = await llm.summarize_transcript(
                             kwargs["transcript_text"],
                             guild_id=kwargs["guild_id"],
+                            user_id=kwargs.get("user_id"),
                             slide_content=kwargs.get("slide_content"),
                             mode=kwargs.get("mode", "meeting")
                         )
                         if new_summary and not new_summary.startswith("⚠️ LLM"):
+                            new_summary = gemini.convert_latex_to_unicode(new_summary)
                             await send_chunked(retry_interaction.channel, kwargs["header"] + new_summary)
                         else:
                             await retry_interaction.followup.send(
@@ -256,6 +263,7 @@ class MeetingIdModal(discord.ui.Modal, title="Meeting Summary"):
                 retry_args = {
                     "transcript_text": transcript_text,
                     "guild_id": self.guild_id,
+                    "user_id": interaction.user.id,
                     "slide_content": slide_content,
                     "mode": mode,
                     "header": header,
@@ -276,6 +284,8 @@ class MeetingIdModal(discord.ui.Modal, title="Meeting Summary"):
             
             # Send summary to channel (not reply) to avoid deletion issues
             if summary:
+                # Convert LaTeX formulas to Unicode (Discord doesn't render LaTeX)
+                summary = gemini.convert_latex_to_unicode(summary)
                 await send_chunked(interaction.channel, header + summary)
             else:
                 await interaction.followup.send(
@@ -536,17 +546,20 @@ class SaveDeleteModal(discord.ui.Modal, title="Save & Delete from Fireflies"):
         # Generate summary
         transcript_text = fireflies.format_transcript(transcript_data)
         summary = await llm.summarize_transcript(
-            transcript_text, guild_id=self.guild_id
+            transcript_text, 
+            guild_id=self.guild_id,
+            user_id=interaction.user.id
         )
 
         # Save locally
         title = self.meeting_title.value or f"Meeting {ff_id[:10]}"
-        entry = transcript_storage.save_transcript(
+        entry, _ = transcript_storage.save_transcript(
             guild_id=self.guild_id,
-            fireflies_id=ff_id,
+            transcript_id=ff_id,
             title=title,
+            platform="ff",
             transcript_data=transcript_data,
-            summary=summary,
+            extra_metadata={"summary": summary} if summary else None,
         )
 
         # Delete from Fireflies

@@ -114,6 +114,7 @@ async def extract_slide_content(
 async def summarize_transcript(
     transcript: str,
     guild_id: Optional[int] = None,
+    user_id: Optional[int] = None,
     slide_content: Optional[str] = None,
     timeout: int = 60,
     retries: int = 3,
@@ -122,9 +123,12 @@ async def summarize_transcript(
     """
     Summarize transcript with optional slide content context.
     
+    Priority: Gemini (if user has API key) -> GLM fallback
+    
     Args:
         transcript: Meeting/lecture transcript text
         guild_id: Guild ID for guild-specific config
+        user_id: User ID for per-user Gemini API key
         slide_content: Full extracted content from slides (comprehensive extraction)
                       Thanks to 128k token budget, we can include everything relevant
         timeout: Timeout in seconds
@@ -136,24 +140,51 @@ async def summarize_transcript(
     """
     from services import config as config_service
     
-    model = os.getenv("GLM_MODEL", "glm-4.6")
-    client = get_client(guild_id)
-    
-    # Get summary prompt from config (allows per-guild customization)
+    # Get summary prompt from config
     system_prompt = config_service.get_prompt(
         guild_id,
         mode=mode,
         prompt_type="summary"
     )
-
-    # Inject slide content context if provided (no length limit needed with 128k)
+    
+    # ========================================
+    # TRY GEMINI FIRST (if user has API key)
+    # ========================================
+    user_gemini_key = None
+    if user_id:
+        user_gemini_key = config_service.get_user_gemini_api(user_id)
+    
+    if user_gemini_key:
+        try:
+            from services import gemini
+            logger.info(f"Using Gemini for transcript summary (user {user_id})")
+            summary = await gemini.summarize_transcript(
+                transcript=transcript,
+                system_prompt=system_prompt,
+                slide_content=slide_content,
+                api_key=user_gemini_key,
+                retries=retries,
+            )
+            return summary
+        except Exception as e:
+            logger.warning(f"Gemini failed, falling back to GLM: {e}")
+            # Fall through to GLM
+    
+    # ========================================
+    # FALLBACK TO GLM
+    # ========================================
+    model = os.getenv("GLM_MODEL", "glm-4.6")
+    client = get_client(guild_id)
+    
+    # Inject slide content context if provided
+    full_prompt = system_prompt
     if slide_content:
-        system_prompt += f"\n\n## Nội dung từ Slides:\n{slide_content}"
+        full_prompt += f"\n\n## Nội dung từ Slides:\n{slide_content}"
 
     last_error = "Unknown error"
     for attempt in range(retries):
         try:
-            logger.info(f"Summarizing transcript ({mode} mode) (attempt {attempt + 1})...")
+            logger.info(f"GLM summarizing transcript ({mode} mode) (attempt {attempt + 1})...")
 
             # Run sync client in thread pool
             loop = asyncio.get_event_loop()
@@ -162,7 +193,7 @@ async def summarize_transcript(
                 lambda: client.chat.completions.create(
                     model=model,
                     messages=[
-                        {"role": "system", "content": system_prompt},
+                        {"role": "system", "content": full_prompt},
                         {
                             "role": "user",
                             "content": f"Tóm tắt cuộc họp sau:\n\n{transcript[:15000]}",
@@ -177,7 +208,7 @@ async def summarize_transcript(
             
             # Check for empty response and retry
             if not summary or not summary.strip():
-                logger.warning(f"LLM returned empty summary (attempt {attempt + 1})")
+                logger.warning(f"GLM returned empty summary (attempt {attempt + 1})")
                 if attempt < retries - 1:
                     backoff = 5 * (attempt + 1)
                     logger.info(f"Retrying in {backoff}s...")
@@ -185,12 +216,12 @@ async def summarize_transcript(
                     continue
                 return "⚠️ LLM trả về summary rỗng sau nhiều lần thử"
             
-            logger.info(f"Summary generated: {len(summary)} chars")
+            logger.info(f"GLM summary generated: {len(summary)} chars")
             return summary
 
         except Exception as e:
             last_error = str(e)
-            logger.error(f"LLM attempt {attempt + 1} failed: {e}")
+            logger.error(f"GLM attempt {attempt + 1} failed: {e}")
             if attempt < retries - 1:
                 backoff = 5 * (attempt + 1)  # 5s, 10s, 15s
                 logger.info(f"Retrying in {backoff}s...")

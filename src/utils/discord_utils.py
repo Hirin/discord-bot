@@ -115,7 +115,7 @@ async def send_chunked_with_frames(
 
 async def send_chunked_with_pages(
     channel: discord.TextChannel,
-    parts: list[tuple[str, int | None]],
+    parts: list[tuple[str, int | None, str | None]],
     slide_images: list[str],
     chunk_size: int = 1900,
 ) -> None:
@@ -124,13 +124,20 @@ async def send_chunked_with_pages(
     
     Args:
         channel: Discord channel to send to
-        parts: List of (text, page_number or None) from parse_pages_and_text
+        parts: List of (text, page_number or None, description or None) from parse_pages_and_text
         slide_images: List of slide image paths (0-indexed)
         chunk_size: Max chars per message
     """
     from services.slides import get_page_image
     
-    for text, page_num in parts:
+    for part in parts:
+        # Handle both old (text, page_num) and new (text, page_num, desc) formats
+        if len(part) == 2:
+            text, page_num = part
+            description = None
+        else:
+            text, page_num, description = part
+        
         # Send text chunk(s)
         if text.strip():
             await send_chunked(channel, text, chunk_size)
@@ -141,8 +148,14 @@ async def send_chunked_with_pages(
             if image_path:
                 try:
                     file = discord.File(image_path, filename=f"slide_{page_num}.jpg")
-                    await channel.send(f"📄 **Slide {page_num}**", file=file)
+                    # Include description in caption if available
+                    if description:
+                        caption = f"📄 **Slide {page_num}**\n*({description})*"
+                    else:
+                        caption = f"📄 **Slide {page_num}**"
+                    await channel.send(caption, file=file)
                     await asyncio.sleep(0.5)  # Rate limit
                 except Exception as e:
                     import logging
                     logging.getLogger(__name__).warning(f"Failed to send slide {page_num}: {e}")
+

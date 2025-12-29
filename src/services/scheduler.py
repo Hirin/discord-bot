@@ -353,12 +353,13 @@ async def run_scheduler(bot):
                                                 update_poll(poll_id, status="failed")
                                     break  # Exit loop, either scheduled retry or gave up
 
-                                # Save locally
+                                # Save locally (metadata only - data goes to Discord archive)
                                 title = t.get("title", "Auto-polled Meeting")
                                 entry, is_new = transcript_storage.save_transcript(
                                     guild_id=guild_id,
-                                    fireflies_id=t_id,
+                                    transcript_id=t_id,
                                     title=title,
+                                    platform="ff",
                                     transcript_data=transcript_data,
                                 )
 

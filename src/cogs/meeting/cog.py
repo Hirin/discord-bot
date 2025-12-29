@@ -8,7 +8,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from services import scheduler, transcript_storage
+from services import scheduler, transcript_storage, config as config_service
 
 from .modals import (
     CancelScheduleModal,
@@ -143,6 +143,60 @@ class WhitelistView(discord.ui.View):
                 f"🛡️ Đã thêm `{selected_id}` vào whitelist",
                 ephemeral=True,
             )
+
+
+def mask_key_short(key: str) -> str:
+    """Show first 3 and last 3 chars only"""
+    if len(key) <= 6:
+        return "*" * len(key)
+    return key[:3] + "..." + key[-3:]
+
+
+class GeminiApiStatusView(discord.ui.View):
+    """View showing Gemini API status with Set button"""
+    
+    def __init__(self, user_id: int):
+        super().__init__(timeout=60)
+        self.user_id = user_id
+    
+    @discord.ui.button(label="🔧 Set API", style=discord.ButtonStyle.primary)
+    async def set_api_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        modal = GeminiApiModal(self.user_id)
+        await interaction.response.send_modal(modal)
+    
+    @discord.ui.button(label="🗑️ Xóa API", style=discord.ButtonStyle.danger)
+    async def delete_api_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        config_service.set_user_gemini_api(self.user_id, None)
+        await interaction.response.send_message(
+            "✅ Đã xóa Gemini API key. Sẽ dùng GLM mặc định.",
+            ephemeral=True
+        )
+
+
+class GeminiApiModal(discord.ui.Modal, title="Set Gemini API Key"):
+    """Modal for entering personal Gemini API key"""
+    
+    api_key = discord.ui.TextInput(
+        label="Gemini API Key",
+        placeholder="AIza...",
+        required=True,
+    )
+    
+    def __init__(self, user_id: int):
+        super().__init__()
+        self.user_id = user_id
+    
+    async def on_submit(self, interaction: discord.Interaction):
+        key = self.api_key.value.strip()
+        
+        # Save to user config
+        config_service.set_user_gemini_api(self.user_id, key)
+        
+        await interaction.response.send_message(
+            f"✅ API Key đã lưu: `{mask_key_short(key)}`\n"
+            f"Gemini sẽ được ưu tiên sử dụng khi summarize.",
+            ephemeral=True
+        )
 
 
 class MeetingView(discord.ui.View):
@@ -327,6 +381,33 @@ class MeetingView(discord.ui.View):
     ):
         """Reload the dropdown view"""
         await interaction.response.edit_message(view=MeetingView(self.guild_id, self.origin_user_id))
+
+    @discord.ui.button(label="🤖 Gemini API", style=discord.ButtonStyle.secondary, row=1)
+    async def gemini_api_button(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        """Show Gemini API status with Set/Delete options"""
+        user_id = interaction.user.id
+        current_key = config_service.get_user_gemini_api(user_id)
+        
+        if current_key:
+            status_text = (
+                f"✅ **Gemini API: Đã cấu hình**\n"
+                f"Key: `{mask_key_short(current_key)}`\n\n"
+                f"Gemini sẽ được ưu tiên khi summarize meeting."
+            )
+        else:
+            status_text = (
+                "❌ **Gemini API: Chưa cấu hình**\n\n"
+                "Đang dùng GLM mặc định. Set Gemini API key để có kết quả tốt hơn."
+            )
+        
+        view = GeminiApiStatusView(user_id)
+        await interaction.response.send_message(
+            status_text,
+            view=view,
+            ephemeral=True
+        )
 
     @discord.ui.button(label="❌ Đóng", style=discord.ButtonStyle.danger, row=1)
     async def close_button(

@@ -18,7 +18,6 @@ Transcript có format [seconds] Speaker: Content. (VD: [117s] Tên: Nội dung)
 **Lưu ý quan trọng:**
 - Trích dẫn: dùng format `[-seconds-]` (VD: [-117s-])
 - **BỎ QUA hoàn toàn** section có tag *(Optional)* nếu không có thông tin → KHÔNG hiển thị section đó, KHÔNG viết "Không có thông tin"
-- **Công thức toán:** Viết bằng symbols Unicode (VD: α₀D₀ + α₁D₁, √n, ∑, ∏, →, ≈, ≤, ≥, ∈, ∀, ∃) thay vì LaTeX (Discord không render được)
 - Ưu tiên thông tin actionable, cụ thể.
 
 Hãy tóm tắt cuộc họp theo cấu trúc sau:
@@ -101,7 +100,6 @@ Transcript có format [seconds] Speaker: Content. (VD: [117s] Tên: Nội dung)
 **Lưu ý quan trọng:**
 - Trích dẫn: dùng format `[-seconds-]` (VD: [-117s-])
 - **BỎ QUA hoàn toàn** section có tag *(Optional)* nếu không có thông tin → KHÔNG hiển thị section đó, KHÔNG viết "Không có thông tin"
-- **Công thức toán:** Viết bằng symbols Unicode (VD: α₀D₀ + α₁D₁, √n, ∑, ∏, →, ≈, ≤, ≥, ∈, ∀, ∃) thay vì LaTeX (Discord không render được)
 - Tập trung vào nội dung kiến thức, ví dụ, và key takeaways
 - Ghi rõ ai nói gì (Giảng viên/Trợ giảng/Học viên) khi cần thiết
 
@@ -203,7 +201,6 @@ GEMINI_LECTURE_PROMPT_PART1 = """Bạn là trợ lý trích xuất nội dung b�
 **Lưu ý quan trọng:**
 - Timestamps dùng format `[-SECONDSs-]` với SECONDS là số giây (VD: [-330s-] cho 5:30, [-5025s-] cho 1:23:45)
 - **BỎ QUA hoàn toàn** section không có thông tin
-- **Công thức toán:** Viết bằng symbols Unicode (α, β, ∑, √, →, ≈, ≤, ≥) thay vì LaTeX
 - Tập trung vào nội dung VIDEO kết hợp với transcript để chính xác hơn
 
 Hãy trích xuất CHI TIẾT nội dung bài giảng theo cấu trúc:
@@ -221,9 +218,15 @@ Hãy trích xuất CHI TIẾT nội dung bài giảng theo cấu trúc:
 ## 💡 Key Takeaways
 - Điểm quan trọng nhất cần nhớ
 
-## ❓ Q&A *(nếu có)*
+## ❓ Q&A *(nếu có)* - thường sẽ được giảng viên đọc lại
 - **Q:** Câu hỏi [-SECONDSs-]
   - **A:** Trả lời
+
+## 📂 Mục lục (Table of Contents) - LUÔN ĐẶT Ở CUỐI CÙNG
+⚠️ **Mục lục PHẢI là phần cuối cùng, không được đưa lên trên.**
+- [-"Tên section đầu tiên"- | -SECONDSs-]
+- [-"Tên section tiếp theo"- | -SECONDSs-]
+- ...
 
 Trích xuất ĐẦY ĐỦ và CHI TIẾT."""
 
@@ -244,7 +247,6 @@ GEMINI_LECTURE_PROMPT_PART_N = """Bạn là trợ lý trích xuất nội dung b
 **Lưu ý quan trọng:**
 - Timestamps dùng format `[-SECONDSs-]` với SECONDS là số giây thực của video gốc
 - **BỎ QUA** section không có thông tin
-- **Công thức toán:** Dùng Unicode symbols (α, β, ∑, √, →, ≈, ≤, ≥)
 - **KHÔNG lặp lại** nội dung đã có trong phần trước
 - Tập trung vào nội dung VIDEO kết hợp với transcript để chính xác hơn
 
@@ -259,9 +261,17 @@ Tiếp tục trích xuất NỘI DUNG MỚI trong phần này:
 ## 💡 Key Takeaways bổ sung
 - Điểm quan trọng mới
 
-## ❓ Q&A mới *(nếu có)*
+## ❓ Q&A mới *(nếu có)* - thường sẽ được giảng viên đọc lại
+- **Q:** Câu hỏi [-SECONDSs-]
+  - **A:** Trả lời
 
-Chỉ trích xuất nội dung MỚI, không lặp lại phần trước."""
+## 📂 Mục lục (Table of Contents) - LUÔN ĐẶT Ở CUỐI CÙNG
+⚠️ **Mục lục PHẢI là phần cuối cùng, không được đưa lên trên.**
+- [-"Tên section đầu tiên"- | -SECONDSs-]
+- [-"Tên section tiếp theo"- | -SECONDSs-]
+- ...
+
+Chỉ trích xuất nội dung MỚI, ĐẦY ĐỦ, CHI TIẾT và KHÔNG lặp lại phần trước."""
 
 
 GEMINI_MERGE_PROMPT = """
@@ -270,7 +280,6 @@ GEMINI_MERGE_PROMPT = """
 - **Mục lục (TOC):** dùng format `[-"TÊN SECTION"- | -SECONDSs-]`
   - VD đúng: `[-"Giới thiệu Text Classification"- | -504s-]`
   - VD sai: `[-Giới thiệu- | -504-]` (thiếu ngoặc kép, thiếu 's')
-- Công thức toán dùng Unicode symbols (α, β, ∑, √, →, ≈, ≤, ≥) thay vì LaTeX vì discord không render được LaTeX
 - Viết CHI TIẾT và ĐẦY ĐỦ để học viên có thể ôn lại mà không cần xem lại video
 
 **SLIDES:** {slide_instructions}
@@ -317,7 +326,8 @@ Hãy tổng hợp thành MỘT bài HOÀN CHỈNH và CHI TIẾT:
 - **Q:** Câu hỏi từ học viên? [-SECONDSs-]
 - **A:** Trả lời chi tiết
 
-## 📂 Mục lục (Table of Contents)
+## 📂 Mục lục (Table of Contents) - LUÔN ĐẶT Ở CUỐI CÙNG
+⚠️ **QUAN TRỌNG: Mục lục PHẢI là phần cuối cùng của bài tóm tắt. KHÔNG được đưa lên trước các section khác.**
 - [-"Tên section đầu tiên"- | -SECONDSs-]
 - [-"Tên section tiếp theo"- | -SECONDSs-]
 - ...
@@ -336,7 +346,6 @@ PREVIEW_SLIDES_PROMPT = """Đây là tài liệu/slides cho một buổi học. 
 - **Tổng hợp theo chủ đề**: Gộp nội dung liên quan từ nhiều tài liệu, KHÔNG tách theo từng file
 - **Mỗi nội dung quan trọng PHẢI có ít nhất 1 slide minh họa**
 - **Slide marker:** `[-DOC{N}:PAGE:{X}-]` với N = số thứ tự tài liệu (1,2...), X = số trang
-- **Công thức toán:** Dùng Unicode symbols (α, β, ∑, √, →, ≈, ≤, ≥) thay vì LaTeX
 - Tổng cộng 10-15 slides quan trọng nhất
 - Ưu tiên slides có: Diagram, công thức, bảng so sánh, code, hình minh họa
 
@@ -393,3 +402,49 @@ Giải thích ngắn gọn.
 - Tổng hợp từ TẤT CẢ tài liệu theo chủ đề
 - Chỉ đánh dấu slides thật sự quan trọng (10-15 slides)
 """
+
+
+# ============================================================================
+# SLIDE MATCHING PROMPT (VLM)
+# ============================================================================
+
+SLIDE_MATCHING_PROMPT = """Bạn là chuyên gia matching slide với nội dung bài giảng.
+
+Bạn được cho:
+1. BẢN TÓM TẮT bài giảng (có nhiều sections và keypoints)
+2. CÁC HÌNH SLIDE từ PDF (đánh số từ 1 đến N)
+
+NHIỆM VỤ: Chèn marker [-PAGE:X:"Mô tả slide"-] vào đúng vị trí, ngay sau keypoint tương ứng.
+
+⚠️ QUY TẮC QUAN TRỌNG NHẤT:
+**GIỮ NGUYÊN TẤT CẢ NỘI DUNG GỐC** - KHÔNG được xóa, sửa đổi, hay viết lại bất kỳ phần nào.
+Đặc biệt: **PHẢI giữ nguyên tất cả timestamps** dạng [-SECONDSs-] (VD: [-930s-], [-1500s-]).
+CHỈ THÊM markers [-PAGE:X:"Mô tả"-] vào, KHÔNG thay đổi gì khác.
+
+QUY TẮC MATCHING:
+
+1. **BỎ QUA slide chỉ có tiêu đề** - KHÔNG chọn slide chỉ có banner text. Chỉ chọn slide có DIAGRAM, CÔNG THỨC, BẢNG, HÌNH MINH HỌA cụ thể.
+
+2. **ƯU TIÊN slide tổng hợp** - Nếu có 1 slide chứa NHIỀU concept, dùng slide đó thay vì nhiều slide riêng lẻ.
+
+3. **TRÁNH slide trùng lặp** - Nếu nhiều slide có nội dung tương tự, chỉ chọn 1 slide ĐẦY ĐỦ NHẤT.
+
+4. **Chèn NGAY SAU keypoint liên quan**:
+   ❌ Sai: "- Keypoint A\\n- Keypoint B\\n[-PAGE:5-]"
+   ✅ Đúng: "- Keypoint A [-PAGE:5:"Minh họa A"-]\\n- Keypoint B"
+
+5. **Thêm mô tả ngắn** trong marker:
+   Format: [-PAGE:X:"Mô tả nội dung slide"-]
+   Ví dụ: [-PAGE:18:"Sơ đồ Mini-Batch Normalization và Scale-Shift"-]
+
+6. **Nếu nhiều keypoints dùng chung 1 slide** → chèn SAU keypoint cuối với mô tả đầy đủ
+
+7. **Không có slide phù hợp hoặc slide không rõ ràng → KHÔNG chèn**
+
+OUTPUT: Bản tóm tắt GIỮ NGUYÊN 100% nội dung gốc (kể cả timestamps), chỉ THÊM markers [-PAGE:X:"Mô tả"-] đúng vị trí.
+
+---
+
+BẢN TÓM TẮT CẦN XỬ LÝ:
+"""
+

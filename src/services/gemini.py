@@ -68,13 +68,17 @@ async def generate_lecture_summary(
     logger.info("Generating lecture summary...")
     start = time.time()
     
-    response = client.models.generate_content(
-        model="gemini-3-flash-preview",
-        contents=[video_file, prompt],
-        config=types.GenerateContentConfig(
-            thinking_config=types.ThinkingConfig(thinking_level="high")
-        ),
-    )
+    # Run sync Gemini call in thread pool to avoid blocking event loop
+    def _generate():
+        return client.models.generate_content(
+            model="gemini-3-flash-preview",
+            contents=[video_file, prompt],
+            config=types.GenerateContentConfig(
+                thinking_config=types.ThinkingConfig(thinking_level="high")
+            ),
+        )
+    
+    response = await asyncio.to_thread(_generate)
     
     logger.info(f"Generated in {time.time()-start:.1f}s, {len(response.text)} chars")
     return response.text
@@ -125,16 +129,94 @@ async def merge_summaries(
     logger.info(f"Merging {len(summaries)} summaries (slides={slide_count}, transcript={len(full_transcript)} chars)...")
     start = time.time()
     
-    response = client.models.generate_content(
-        model="gemini-3-flash-preview",
-        contents=full_prompt,
-        config=types.GenerateContentConfig(
-            thinking_config=types.ThinkingConfig(thinking_level="high")
-        ),
-    )
+    # Run sync Gemini call in thread pool to avoid blocking event loop
+    def _merge():
+        return client.models.generate_content(
+            model="gemini-3-flash-preview",
+            contents=full_prompt,
+            config=types.GenerateContentConfig(
+                thinking_config=types.ThinkingConfig(thinking_level="high")
+            ),
+        )
+    
+    response = await asyncio.to_thread(_merge)
     
     logger.info(f"Merged in {time.time()-start:.1f}s")
     return response.text
+
+
+async def summarize_transcript(
+    transcript: str,
+    system_prompt: str,
+    slide_content: Optional[str] = None,
+    api_key: Optional[str] = None,
+    retries: int = 3,
+) -> str:
+    """
+    Summarize transcript using Gemini API with thinking mode.
+    
+    Args:
+        transcript: Meeting/lecture transcript text
+        system_prompt: System prompt for summarization style
+        slide_content: Optional slide content for context
+        api_key: Gemini API key
+        retries: Number of retry attempts
+    
+    Returns:
+        Summary text or raises exception on failure
+    """
+    from google.genai import types
+    
+    client = get_client(api_key)
+    
+    # Inject slide content if provided
+    full_prompt = system_prompt
+    if slide_content:
+        full_prompt += f"\n\n## Nội dung từ Slides:\n{slide_content}"
+    
+    # Build content - system prompt + transcript
+    user_content = f"Tóm tắt cuộc họp sau:\n\n{transcript[:50000]}"  # Limit to 50k chars
+    
+    last_error = None
+    for attempt in range(retries):
+        try:
+            logger.info(f"Gemini summarizing transcript (attempt {attempt + 1})...")
+            start = time.time()
+            
+            # Run sync Gemini call in thread pool
+            def _summarize():
+                return client.models.generate_content(
+                    model="gemini-3-flash-preview",
+                    contents=[
+                        {"role": "user", "parts": [{"text": full_prompt + "\n\n" + user_content}]}
+                    ],
+                    config=types.GenerateContentConfig(
+                        thinking_config=types.ThinkingConfig(thinking_level="high")
+                    ),
+                )
+            
+            response = await asyncio.to_thread(_summarize)
+            
+            summary = response.text
+            if summary and summary.strip():
+                logger.info(f"Gemini summary generated in {time.time()-start:.1f}s, {len(summary)} chars")
+                return summary
+            else:
+                logger.warning(f"Gemini returned empty summary (attempt {attempt + 1})")
+                last_error = "Empty response"
+                
+        except Exception as e:
+            last_error = str(e)
+            logger.error(f"Gemini attempt {attempt + 1} failed: {e}")
+        
+        # Backoff before retry
+        if attempt < retries - 1:
+            backoff = 5 * (attempt + 1)
+            logger.info(f"Retrying in {backoff}s...")
+            await asyncio.sleep(backoff)
+    
+    # All retries failed
+    raise Exception(f"Gemini summarize failed after {retries} attempts: {last_error}")
 
 
 def format_video_timestamps(text: str, video_url: str) -> str:
@@ -155,7 +237,7 @@ def format_video_timestamps(text: str, video_url: str) -> str:
     def replace_timestamp(match):
         seconds = int(match.group(1))
         mmss = seconds_to_mmss(seconds)
-        return f"[[{mmss}]](<{video_url}&t={seconds}>)"
+        return f"[{mmss}](<{video_url}&t={seconds}>)"
     
     # Pattern: [-123s-] or [-1234s-]
     pattern = r'\[-(\d+)s-\]'
@@ -225,16 +307,19 @@ def parse_frames_and_text(text: str) -> list[tuple[str, int | None]]:
     return parts
 
 
-def parse_pages_and_text(text: str) -> list[tuple[str, int | None]]:
+def parse_pages_and_text(text: str) -> list[tuple[str, int | None, str | None]]:
     """
-    Parse text and split at [-PAGE:X-] markers.
+    Parse text and split at [-PAGE:X-] or [-PAGE:X:"description"-] markers.
     
-    Returns list of tuples: (text_chunk, page_number or None)
-    Example: "Hello [-PAGE:5-] World" -> [("Hello ", 5), (" World", None)]
+    Returns list of tuples: (text_chunk, page_number or None, description or None)
+    Example: 
+        "Hello [-PAGE:5:"CNN diagram"-] World" -> [("Hello ", 5, "CNN diagram"), (" World", None, None)]
     """
     import re
     
-    pattern = r'\[-PAGE:(\d+)-\]'
+    # Pattern matches: [-PAGE:X-], [-PAGE:X:"description"-], [-PAGE:X:"description"]
+    # The trailing dash before ] is optional since LLM sometimes omits it
+    pattern = r'\[-PAGE:(\d+)(?::"([^"]+)")?-?\]'
     parts = []
     last_end = 0
     
@@ -242,39 +327,56 @@ def parse_pages_and_text(text: str) -> list[tuple[str, int | None]]:
         # Text before this page marker
         text_before = text[last_end:match.start()]
         page_num = int(match.group(1))
+        description = match.group(2)  # May be None
         
         if text_before.strip():
-            parts.append((text_before, page_num))
+            parts.append((text_before, page_num, description))
         else:
-            parts.append(("", page_num))
+            parts.append(("", page_num, description))
         
         last_end = match.end()
+        
+        # Skip orphan dots/whitespace right after the marker
+        while last_end < len(text) and text[last_end] in ' \t\n.':
+            if text[last_end] == '.':
+                last_end += 1
+                break  # Only skip one orphan dot
+            last_end += 1
     
     # Remaining text after last marker
     remaining = text[last_end:]
     if remaining.strip():
-        parts.append((remaining, None))
+        parts.append((remaining, None, None))
     
     # If no pages found, return original text
     if not parts:
-        parts.append((text, None))
+        parts.append((text, None, None))
     
     return parts
 
 
 def strip_page_markers(text: str) -> str:
     """
-    Remove [-PAGE:X-] markers and their captions from text.
+    Remove [-PAGE:X-] and [-PAGE:X:"description"-] markers from text.
     Used when no slides are available.
     
     Example: 
-        "Text [-PAGE:1-] (Caption here) more text" -> "Text more text"
+        "Text [-PAGE:1:"CNN diagram"-] more text" -> "Text more text"
     """
     import re
     
-    # Pattern: [-PAGE:X-] optionally followed by (caption)
-    pattern = r'\[-PAGE:\d+-\]\s*(?:\([^)]*\))?'
+    # Pattern: [-PAGE:X-] or [-PAGE:X:"description"-] or [-PAGE:X:"description"] optionally followed by (caption)
+    pattern = r'\[-PAGE:\d+(?::"[^"]+")?\-?\]\s*(?:\([^)]*\))?'
     return re.sub(pattern, '', text)
+
+
+# Re-export LaTeX utilities from dedicated module for backward compatibility
+from services.latex_utils import (  # noqa: E402, F401
+    convert_latex_to_unicode,
+    render_latex_to_image,
+    process_latex_formulas,
+    cleanup_latex_images,
+)
 
 
 def cleanup_file(file, api_key: Optional[str] = None) -> None:
@@ -309,39 +411,42 @@ async def summarize_pdfs(
     
     client = get_client(api_key)
     
-    # Upload all PDFs
-    uploaded_files = []
-    try:
-        for pdf_path in pdf_paths:
-            uploaded = client.files.upload(file=pdf_path)
-            uploaded_files.append(uploaded)
-            logger.info(f"Uploaded PDF: {pdf_path} -> {uploaded.name}")
-        
-        # Build content with all files + prompt
-        contents = uploaded_files + [prompt]
-        
-        # Generate with thinking
-        logger.info(f"Calling Gemini with {len(pdf_paths)} PDFs, thinking={thinking_level}")
-        start = time.time()
-        
-        response = client.models.generate_content(
-            model="gemini-3-flash-preview",
-            contents=contents,
-            config=types.GenerateContentConfig(
-                thinking_config=types.ThinkingConfig(thinking_level=thinking_level)
-            ),
-        )
-        
-        logger.info(f"Generated in {time.time()-start:.1f}s, {len(response.text)} chars")
-        return response.text
-        
-    finally:
-        # Always cleanup uploaded files
-        for f in uploaded_files:
-            try:
-                client.files.delete(name=f.name)
-            except Exception as e:
-                logger.warning(f"Failed to cleanup Gemini file {f.name}: {e}")
+    # Run sync operations in thread pool to avoid blocking event loop
+    def _upload_and_generate():
+        uploaded_files = []
+        try:
+            for pdf_path in pdf_paths:
+                uploaded = client.files.upload(file=pdf_path)
+                uploaded_files.append(uploaded)
+                logger.info(f"Uploaded PDF: {pdf_path} -> {uploaded.name}")
+            
+            # Build content with all files + prompt
+            contents = uploaded_files + [prompt]
+            
+            # Generate with thinking
+            logger.info(f"Calling Gemini with {len(pdf_paths)} PDFs, thinking={thinking_level}")
+            start = time.time()
+            
+            response = client.models.generate_content(
+                model="gemini-3-flash-preview",
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    thinking_config=types.ThinkingConfig(thinking_level=thinking_level)
+                ),
+            )
+            
+            logger.info(f"Generated in {time.time()-start:.1f}s, {len(response.text)} chars")
+            return response.text
+            
+        finally:
+            # Always cleanup uploaded files
+            for f in uploaded_files:
+                try:
+                    client.files.delete(name=f.name)
+                except Exception as e:
+                    logger.warning(f"Failed to cleanup Gemini file {f.name}: {e}")
+    
+    return await asyncio.to_thread(_upload_and_generate)
 
 
 def extract_youtube_id(url: str) -> Optional[str]:
@@ -364,3 +469,63 @@ def make_youtube_timestamp_url(youtube_url: str, seconds: int) -> str:
     if video_id:
         return f"https://youtube.com/watch?v={video_id}&t={seconds}"
     return youtube_url
+
+
+async def match_slides_to_summary(
+    summary: str,
+    slide_images_b64: list[str],
+    api_key: Optional[str] = None,
+    max_slides: int = 60,
+) -> str:
+    """
+    Use Gemini VLM to match slides to summary content.
+    
+    Args:
+        summary: The merged summary text (without slide markers)
+        slide_images_b64: List of base64 encoded slide images
+        api_key: Optional Gemini API key
+        max_slides: Maximum number of slides to process
+        
+    Returns:
+        Summary with [-PAGE:X:"description"-] markers inserted
+    """
+    from google.genai import types
+    from services.prompts import SLIDE_MATCHING_PROMPT
+    
+    if not slide_images_b64:
+        logger.info("No slide images provided, skipping slide matching")
+        return summary
+    
+    client = get_client(api_key)
+    
+    # Use all slides
+    slides_to_use = slide_images_b64
+    logger.info(f"Matching {len(slides_to_use)} slides to summary")
+    
+    def _call_gemini():
+        # Build content with slides + prompt
+        content_parts = []
+        
+        for img_b64 in slides_to_use:
+            content_parts.append({
+                "inline_data": {
+                    "mime_type": "image/jpeg",
+                    "data": img_b64
+                }
+            })
+        
+        content_parts.append({"text": SLIDE_MATCHING_PROMPT + summary})
+        
+        start = time.time()
+        response = client.models.generate_content(
+            model="gemini-3-flash-preview",
+            contents=[{"role": "user", "parts": content_parts}],
+            config=types.GenerateContentConfig(
+                thinking_config=types.ThinkingConfig(thinking_level="high")
+            ),
+        )
+        logger.info(f"Slide matching completed in {time.time()-start:.1f}s")
+        return response.text
+    
+    return await asyncio.to_thread(_call_gemini)
+

@@ -8,8 +8,6 @@ poll for completion, and parse transcript with paragraphs.
 import asyncio
 import aiohttp
 import logging
-import os
-from typing import Optional
 from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
@@ -122,9 +120,9 @@ async def upload_file(file_path: str, api_key: str) -> str:
                 upload_url = result.get("upload_url")
                 
                 if not upload_url:
-                    raise Exception(f"AssemblyAI upload failed: no upload_url in response")
+                    raise Exception("AssemblyAI upload failed: no upload_url in response")
                 
-                logger.info(f"File uploaded to AssemblyAI")
+                logger.info("File uploaded to AssemblyAI")
                 return upload_url
 
 
@@ -144,7 +142,7 @@ async def start_transcription(
     Returns:
         Transcript ID
     """
-    logger.info(f"Starting AssemblyAI transcription")
+    logger.info("Starting AssemblyAI transcription")
     
     headers = {
         "authorization": api_key,
@@ -321,8 +319,36 @@ async def transcribe_file(
             except Exception as e:
                 logger.warning(f"Error caching AssemblyAI upload_url: {e}")
     
-    # Step 2: Start transcription
-    transcript_id = await start_transcription(file_url, api_key, language_code)
+    # Step 2: Start transcription (or resume from cached transcript_id)
+    transcript_id = None
+    transcript_cache_stage = f"assemblyai_transcript_id_{api_key_hash}"
+    
+    # Try to get cached transcript_id first (resume polling)
+    if cache_id:
+        try:
+            from services import lecture_cache
+            tid_cache = lecture_cache.get_stage(cache_id, transcript_cache_stage)
+            if tid_cache and tid_cache.get("transcript_id"):
+                transcript_id = tid_cache["transcript_id"]
+                logger.info(f"Resuming from cached transcript_id: {transcript_id}")
+        except Exception as e:
+            logger.warning(f"Error checking transcript_id cache: {e}")
+    
+    # Start new transcription if no cached transcript_id
+    if not transcript_id:
+        transcript_id = await start_transcription(file_url, api_key, language_code)
+        
+        # Cache transcript_id immediately so we can resume polling if crash
+        if cache_id:
+            try:
+                from services import lecture_cache
+                lecture_cache.save_stage(cache_id, transcript_cache_stage, {
+                    "transcript_id": transcript_id,
+                    "file_url": file_url,
+                })
+                logger.info(f"Cached transcript_id: {transcript_id}")
+            except Exception as e:
+                logger.warning(f"Error caching transcript_id: {e}")
     
     # Step 3: Poll for completion
     result = await poll_transcription(transcript_id, api_key)

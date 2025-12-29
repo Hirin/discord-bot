@@ -1,18 +1,25 @@
 """
 Transcript Storage Service
-Save transcripts locally organized by guild, using Fireflies ID as unique key
+Save transcripts locally organized by guild, supporting multiple platforms:
+- ff: Fireflies (meeting transcripts)
+- aai: AssemblyAI (lecture transcripts)
+
+File naming: {platform}_{transcript_id}.json
 """
 
 import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Literal
 
 logger = logging.getLogger(__name__)
 
 # Store transcripts in JSON, organized by guild
 TRANSCRIPTS_DIR = Path(__file__).parent.parent.parent / "data" / "transcripts"
+
+# Platform types
+Platform = Literal["ff", "aai"]
 
 
 def _get_guild_dir(guild_id: int) -> Path:
@@ -22,52 +29,102 @@ def _get_guild_dir(guild_id: int) -> Path:
     return guild_dir
 
 
-def transcript_exists(guild_id: int, fireflies_id: str) -> bool:
-    """Check if transcript already exists locally"""
+def _sanitize_title(title: str, max_len: int = 30) -> str:
+    """Sanitize title for use in filename"""
+    import re
+    safe = re.sub(r'[^\w\s-]', '', title)[:max_len].strip()
+    return re.sub(r'[\s]+', '-', safe)
+
+
+def _get_file_path(guild_id: int, platform: Platform, transcript_id: str, title: str = "") -> Path:
+    """Get file path for a transcript: {platform}_{id}_{title_slug}.json"""
     guild_dir = _get_guild_dir(guild_id)
-    file_path = guild_dir / f"{fireflies_id}.json"
-    return file_path.exists()
+    if title:
+        title_slug = _sanitize_title(title, 25)
+        return guild_dir / f"{platform}_{transcript_id}_{title_slug}.json"
+    return guild_dir / f"{platform}_{transcript_id}.json"
+
+
+def _find_transcript_file(guild_id: int, platform: Platform, transcript_id: str) -> Optional[Path]:
+    """Find transcript file by platform and ID (handles title in filename)"""
+    guild_dir = _get_guild_dir(guild_id)
+    # Pattern: {platform}_{transcript_id}*.json
+    pattern = f"{platform}_{transcript_id}*.json"
+    matches = list(guild_dir.glob(pattern))
+    if matches:
+        return matches[0]
+    return None
+
+
+def transcript_exists(guild_id: int, transcript_id: str, platform: Platform = "ff") -> bool:
+    """Check if transcript already exists locally"""
+    return _find_transcript_file(guild_id, platform, transcript_id) is not None
 
 
 def save_transcript(
     guild_id: int,
-    fireflies_id: str,
+    transcript_id: str,
     title: str,
-    transcript_data: list[dict],
+    platform: Platform = "ff",
+    transcript_data: Optional[list[dict]] = None,
+    video_url: Optional[str] = None,
+    duration: Optional[float] = None,
+    extra_metadata: Optional[dict] = None,
 ) -> tuple[dict, bool]:
     """
-    Save transcript to local storage using Fireflies ID as unique key.
+    Save transcript metadata to local storage.
     
     Args:
         guild_id: Discord guild ID
-        fireflies_id: Original Fireflies transcript ID (used as filename)
-        title: Meeting title
-        transcript_data: List of transcript entries
+        transcript_id: Unique transcript ID from platform
+        title: Transcript/meeting title
+        platform: "ff" (Fireflies) or "aai" (AssemblyAI)
+        transcript_data: Full transcript entries (only for Fireflies, optional for AssemblyAI)
+        video_url: Source video URL (for AssemblyAI)
+        duration: Audio/video duration in seconds
+        extra_metadata: Additional platform-specific metadata
 
     Returns:
         Tuple of (entry dict, is_new) - is_new=False if already existed
     """
-    guild_dir = _get_guild_dir(guild_id)
-    file_path = guild_dir / f"{fireflies_id}.json"
-    
-    # Check if already exists
-    if file_path.exists():
-        logger.info(f"Transcript {fireflies_id} already exists, skipping save")
-        existing = json.loads(file_path.read_text())
+    # Check if already exists (by pattern since filename includes title)
+    existing_file = _find_transcript_file(guild_id, platform, transcript_id)
+    if existing_file:
+        logger.info(f"Transcript {platform}:{transcript_id} already exists, skipping save")
+        existing = json.loads(existing_file.read_text())
         return (existing, False)
     
+    file_path = _get_file_path(guild_id, platform, transcript_id, title)
+    
     entry = {
-        "id": fireflies_id,  # Primary ID is now Fireflies ID
-        "fireflies_id": fireflies_id,  # Keep for backward compat
+        "id": transcript_id,
+        "platform": platform,
         "guild_id": guild_id,
         "title": title,
         "created_at": datetime.now().isoformat(),
         "created_timestamp": int(datetime.now().timestamp()),
-        "transcript": transcript_data,
     }
+    
+    # Platform-specific fields (metadata only - no transcript_data in local file)
+    if platform == "ff":
+        entry["fireflies_id"] = transcript_id  # Backward compat
+    elif platform == "aai":
+        entry["assemblyai_id"] = transcript_id
+        if video_url:
+            entry["video_url"] = video_url
+        if duration:
+            entry["duration"] = duration
+    
+    # Extra metadata
+    if extra_metadata:
+        entry.update(extra_metadata)
+    
+    # NOTE: transcript_data is NOT saved locally - only to Discord archive
+    # Store it temporarily for upload_to_discord, then remove
+    entry["_transcript_data"] = transcript_data  # Underscore = temp field
 
-    file_path.write_text(json.dumps(entry, ensure_ascii=False, indent=2))
-    logger.info(f"Saved new transcript {fireflies_id} for guild {guild_id}")
+    file_path.write_text(json.dumps({k: v for k, v in entry.items() if not k.startswith('_')}, ensure_ascii=False, indent=2))
+    logger.info(f"Saved new transcript {platform}:{transcript_id} for guild {guild_id}")
     return (entry, True)
 
 
@@ -84,6 +141,7 @@ def generate_backup_filename(title: str) -> str:
 async def upload_to_discord(bot, guild_id: int, entry: dict) -> Optional[str]:
     """
     Upload transcript JSON to Discord archive channel.
+    Includes full transcript_data in the uploaded file.
     
     Returns:
         Attachment URL if successful, None otherwise
@@ -103,9 +161,19 @@ async def upload_to_discord(bot, guild_id: int, entry: dict) -> Optional[str]:
         return None
     
     try:
+        # Build full entry for Discord (includes transcript_data)
+        full_entry = {k: v for k, v in entry.items() if not k.startswith('_')}
+        
+        # Add transcript_data if available (from temp field)
+        transcript_data = entry.get("_transcript_data")
+        if transcript_data:
+            full_entry["transcript"] = transcript_data
+        
         # Create JSON content
-        json_content = json.dumps(entry, ensure_ascii=False, indent=2)
-        filename = generate_backup_filename(entry.get("title", "transcript"))
+        json_content = json.dumps(full_entry, ensure_ascii=False, indent=2)
+        
+        platform = entry.get("platform", "ff")
+        filename = f"{platform}_{generate_backup_filename(entry.get('title', 'transcript'))}"
         
         # Upload as file
         file = discord.File(
@@ -113,8 +181,10 @@ async def upload_to_discord(bot, guild_id: int, entry: dict) -> Optional[str]:
             filename=filename
         )
         
+        # Message with platform indicator
+        platform_emoji = "📋" if platform == "ff" else "🎓"
         msg = await channel.send(
-            f"📋 **{entry.get('title', 'Transcript')}**\nID: `{entry.get('id') or entry.get('fireflies_id')}`",
+            f"{platform_emoji} **{entry.get('title', 'Transcript')}**\nID: `{platform}:{entry.get('id')}`",
             file=file
         )
         
@@ -123,8 +193,8 @@ async def upload_to_discord(bot, guild_id: int, entry: dict) -> Optional[str]:
             backup_url = msg.attachments[0].url
             
             # Update local file with backup URL
-            transcript_id = entry.get("id") or entry.get("fireflies_id")
-            update_backup_url(entry.get("guild_id"), transcript_id, backup_url)
+            transcript_id = entry.get("id")
+            update_backup_url(guild_id, transcript_id, backup_url, platform)
             
             logger.info(f"Uploaded transcript backup: {filename}")
             return backup_url
@@ -136,13 +206,12 @@ async def upload_to_discord(bot, guild_id: int, entry: dict) -> Optional[str]:
         return None
 
 
-def update_backup_url(guild_id: int, transcript_id: str, backup_url: str) -> bool:
+def update_backup_url(guild_id: int, transcript_id: str, backup_url: str, platform: Platform = "ff") -> bool:
     """Update backup URL for a transcript"""
-    entry = get_transcript(guild_id, transcript_id)
-    if entry:
+    file_path = _find_transcript_file(guild_id, platform, transcript_id)
+    if file_path:
+        entry = json.loads(file_path.read_text())
         entry["backup_url"] = backup_url
-        guild_dir = _get_guild_dir(guild_id)
-        file_path = guild_dir / f"{transcript_id}.json"
         file_path.write_text(json.dumps(entry, ensure_ascii=False, indent=2))
         return True
     return False
@@ -227,25 +296,90 @@ async def update_title(
     return (True, f"Title updated: `{old_title}` → `{new_title}`")
 
 
-def get_transcript(guild_id: int, transcript_id: str) -> Optional[dict]:
-    """Get transcript by ID (Fireflies ID or old local_id format)"""
+def get_transcript(guild_id: int, transcript_id: str, platform: Optional[Platform] = None) -> Optional[dict]:
+    """
+    Get transcript by ID.
+    
+    Args:
+        guild_id: Guild ID
+        transcript_id: Transcript ID
+        platform: Optional platform filter ("ff" or "aai"). If None, searches all.
+    """
     guild_dir = _get_guild_dir(guild_id)
     
-    # Try direct Fireflies ID
-    file_path = guild_dir / f"{transcript_id}.json"
-    if file_path.exists():
-        return json.loads(file_path.read_text())
+    # If platform specified, use direct search
+    if platform:
+        file_path = _find_transcript_file(guild_id, platform, transcript_id)
+        if file_path:
+            return json.loads(file_path.read_text())
+        return None
     
-    # Fallback: search by fireflies_id or local_id field
+    # Try both platforms
+    for p in ["ff", "aai"]:
+        file_path = _find_transcript_file(guild_id, p, transcript_id)
+        if file_path:
+            return json.loads(file_path.read_text())
+    
+    # Fallback: search old format (direct transcript_id.json) for backward compat
+    old_path = guild_dir / f"{transcript_id}.json"
+    if old_path.exists():
+        return json.loads(old_path.read_text())
+    
+    # Fallback: search by id field in all files
     for f in guild_dir.glob("*.json"):
         try:
             data = json.loads(f.read_text())
-            if data.get("fireflies_id") == transcript_id or data.get("local_id") == transcript_id:
+            if data.get("id") == transcript_id or data.get("fireflies_id") == transcript_id or data.get("assemblyai_id") == transcript_id:
                 return data
         except Exception:
             pass
     
     return None
+
+async def fetch_transcript_data(backup_url: str) -> Optional[list[dict]]:
+    """
+    Download transcript data from backup URL (Discord attachment).
+    
+    Args:
+        backup_url: Discord attachment URL
+        
+    Returns:
+        Transcript data list or None if failed
+    """
+    import httpx
+    
+    if not backup_url:
+        return None
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(backup_url)
+            if response.status_code == 200:
+                data = response.json()
+                return data.get("transcript")
+    except Exception as e:
+        logger.error(f"Failed to fetch transcript from backup: {e}")
+    
+    return None
+
+
+async def get_transcript_with_data(guild_id: int, transcript_id: str, platform: Optional[Platform] = None) -> Optional[dict]:
+    """
+    Get transcript metadata and fetch transcript data from backup if available.
+    
+    Returns full entry with transcript data populated from backup_url.
+    """
+    entry = get_transcript(guild_id, transcript_id, platform)
+    if not entry:
+        return None
+    
+    # If transcript data not in local, fetch from backup_url
+    if "transcript" not in entry and entry.get("backup_url"):
+        transcript_data = await fetch_transcript_data(entry["backup_url"])
+        if transcript_data:
+            entry["transcript"] = transcript_data
+    
+    return entry
 
 
 async def restore_from_archive(bot, guild_id: int, transcript_id: str) -> Optional[dict]:

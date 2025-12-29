@@ -37,7 +37,7 @@ echo "Installing dependencies..."
 
 # Install yt-dlp and ffmpeg for video processing
 echo "Installing yt-dlp and ffmpeg..."
-~/.local/bin/uv pip install yt-dlp --quiet
+~/.local/bin/uv pip install yt-dlp matplotlib --quiet
 sudo apt-get install -y ffmpeg --quiet 2>/dev/null || true
 
 # Install playwright browsers

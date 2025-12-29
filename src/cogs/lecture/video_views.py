@@ -10,16 +10,12 @@ from typing import Optional
 
 from services import gemini, video_download, video, lecture_cache, prompts
 from services.video import format_timestamp, cleanup_files
+from services.slides import SlidesError
 from utils.discord_utils import send_chunked
 
 logger = logging.getLogger(__name__)
 
 RATE_LIMIT_WAIT = 60  # seconds between API calls
-
-
-class SlidesError(Exception):
-    """Raised when slides processing fails"""
-    pass
 
 
 class LectureSourceView(discord.ui.View):
@@ -196,7 +192,7 @@ class SlidesUrlModal(discord.ui.Modal, title="Slides PDF URL"):
     async def on_submit(self, interaction: discord.Interaction):
         self.slides_url = self.url_input.value.strip()
         await interaction.response.send_message(
-            f"✅ Đã nhận link slides",
+            "✅ Đã nhận link slides",
             ephemeral=True
         )
 
@@ -244,52 +240,82 @@ async def prompt_for_slides(
         return drive_url, "drive", drive_url
     
     if view.choice == "upload":
-        # Wait for file upload
+        # Wait for file upload with retry on wrong format
         def check(m):
             return (
                 m.author.id == user_id
                 and m.channel.id == interaction.channel.id
                 and m.attachments
-                and any(a.filename.lower().endswith('.pdf') for a in m.attachments)
             )
         
-        try:
-            msg = await bot.wait_for("message", check=check, timeout=90)
-            attachment = msg.attachments[0]
-            
-            # Download file to /tmp
-            file_path = f"/tmp/slides_upload_{user_id}_{attachment.filename}"
-            file_bytes = await attachment.read()
-            
-            with open(file_path, 'wb') as f:
-                f.write(file_bytes)
-            
-            # Delete user's message
+        max_attempts = 3
+        for attempt in range(max_attempts):
             try:
-                await msg.delete()
-            except Exception:
-                pass
-            
-            await interaction.followup.send(
-                f"✅ Đã nhận slides: {attachment.filename}",
-                ephemeral=True
-            )
-            
-            return file_path, "upload", file_path
-            
-        except asyncio.TimeoutError:
-            await interaction.followup.send(
-                "⏰ Timeout - tiếp tục không có slides",
-                ephemeral=True,
-            )
-            return None, None, None
-        except Exception as e:
-            logger.exception("Error uploading slides")
-            await interaction.followup.send(
-                f"❌ Lỗi upload: {str(e)[:50]}",
-                ephemeral=True,
-            )
-            return None, None, None
+                remaining_attempts = max_attempts - attempt
+                msg = await bot.wait_for("message", check=check, timeout=60)
+                attachment = msg.attachments[0]
+                
+                # Validate PDF format
+                if not attachment.filename.lower().endswith('.pdf'):
+                    # Delete user's message
+                    try:
+                        await msg.delete()
+                    except Exception:
+                        pass
+                    
+                    file_ext = attachment.filename.split('.')[-1] if '.' in attachment.filename else 'unknown'
+                    
+                    if remaining_attempts > 1:
+                        await interaction.followup.send(
+                            f"❌ **Định dạng file không hợp lệ!**\n"
+                            f"Bạn upload file `.{file_ext}`, nhưng slides phải là **PDF** (.pdf)\n"
+                            f"📎 Vui lòng upload lại file PDF ({remaining_attempts - 1} lần thử còn lại)...",
+                            ephemeral=True
+                        )
+                        continue  # Retry
+                    else:
+                        await interaction.followup.send(
+                            f"❌ **Đã hết lượt thử!** File `.{file_ext}` không hợp lệ.\n"
+                            f"Tiếp tục không có slides...",
+                            ephemeral=True
+                        )
+                        return None, None, None
+                
+                # Valid PDF - download to /tmp
+                file_path = f"/tmp/slides_upload_{user_id}_{attachment.filename}"
+                file_bytes = await attachment.read()
+                
+                with open(file_path, 'wb') as f:
+                    f.write(file_bytes)
+                
+                # Delete user's message
+                try:
+                    await msg.delete()
+                except Exception:
+                    pass
+                
+                await interaction.followup.send(
+                    f"✅ Đã nhận slides: {attachment.filename}",
+                    ephemeral=True
+                )
+                
+                return file_path, "upload", file_path
+                
+            except asyncio.TimeoutError:
+                await interaction.followup.send(
+                    "⏰ Timeout - tiếp tục không có slides",
+                    ephemeral=True,
+                )
+                return None, None, None
+            except Exception as e:
+                logger.exception("Error uploading slides")
+                await interaction.followup.send(
+                    f"❌ Lỗi upload: {str(e)[:50]}",
+                    ephemeral=True,
+                )
+                return None, None, None
+        
+        return None, None, None
     
     return None, None, None
 
@@ -326,13 +352,14 @@ class VideoErrorView(discord.ui.View):
 
 
 class SlidesErrorView(discord.ui.View):
-    """View for handling slides processing errors - Continue/Retry/Cancel"""
+    """View for handling slides processing errors - Continue/Retry/NewLink/Cancel"""
     
     def __init__(self, processor: "VideoLectureProcessor", error_msg: str):
         super().__init__(timeout=300)
         self.processor = processor
         self.error_msg = error_msg
-        self.choice = None  # "continue", "retry", or "cancel"
+        self.choice = None  # "continue", "retry", "new_link", or "cancel"
+        self.new_slides_url = None
     
     @discord.ui.button(label="▶️ Tiếp tục không có slides", style=discord.ButtonStyle.success)
     async def continue_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -345,7 +372,7 @@ class SlidesErrorView(discord.ui.View):
         self.choice = "continue"
         self.stop()
     
-    @discord.ui.button(label="🔄 Thử lại slides", style=discord.ButtonStyle.primary)
+    @discord.ui.button(label="🔄 Thử lại", style=discord.ButtonStyle.primary)
     async def retry_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         for item in self.children:
             item.disabled = True
@@ -356,12 +383,46 @@ class SlidesErrorView(discord.ui.View):
         self.choice = "retry"
         self.stop()
     
+    @discord.ui.button(label="📎 Gửi link mới", style=discord.ButtonStyle.secondary)
+    async def new_link_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # Show modal to get new slides URL
+        modal = NewSlidesUrlModal(self)
+        await interaction.response.send_modal(modal)
+    
     @discord.ui.button(label="❌ Hủy", style=discord.ButtonStyle.danger)
     async def cancel_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.processor.cleanup()
         await interaction.response.edit_message(content="❌ Đã hủy", view=None)
         self.choice = "cancel"
         self.stop()
+
+
+class NewSlidesUrlModal(discord.ui.Modal, title="Gửi lại link slides"):
+    """Modal for entering new slides URL"""
+    
+    slides_url = discord.ui.TextInput(
+        label="Link slides mới (Google Drive hoặc URL)",
+        placeholder="https://drive.google.com/file/d/...",
+        required=True,
+        max_length=500
+    )
+    
+    def __init__(self, parent_view: SlidesErrorView):
+        super().__init__()
+        self.parent_view = parent_view
+    
+    async def on_submit(self, interaction: discord.Interaction):
+        for item in self.parent_view.children:
+            item.disabled = True
+        
+        self.parent_view.new_slides_url = self.slides_url.value
+        self.parent_view.choice = "new_link"
+        
+        await interaction.response.edit_message(
+            content="📎 Đang tải slides từ link mới...",
+            view=self.parent_view
+        )
+        self.parent_view.stop()
 
 class GeminiApiKeyModal(discord.ui.Modal, title="Đổi Gemini API Key"):
     """Modal for entering new Gemini API key (saves to user config)"""
@@ -551,16 +612,54 @@ class VideoLectureProcessor:
             assemblyai_task = None
             transcript = None
             
-            # Check transcript cache first
-            transcript_stage = lecture_cache.get_stage(self.cache_id, "transcript")
-            if transcript_stage and transcript_stage.get("data"):
-                # Use cached transcript
-                from services import assemblyai_transcript
-                transcript = assemblyai_transcript.Transcript.from_dict(transcript_stage["data"])
-                self.transcript = transcript.to_text()
-                await self.update_status(f"✅ Transcript từ cache ({len(transcript.paragraphs)} paragraphs)")
-                logger.info(f"Using cached transcript: {len(transcript.paragraphs)} paragraphs")
-            elif user_assemblyai_key:
+            # Check persistent transcript storage first (keyed by video_url hash)
+            # This is independent of slides/prompt changes
+            import hashlib
+            from services import transcript_storage
+            
+            user_assemblyai_key = config_service.get_user_assemblyai_api(self.interaction.user.id)
+            guild_id = self.interaction.guild_id
+            
+            # Generate transcript_id based on video_url (not slides/prompt)
+            video_hash = hashlib.md5(self.youtube_url.encode()).hexdigest()[:12]
+            aai_transcript_id = f"v_{video_hash}"
+            
+            # Try to get from persistent storage first
+            stored_entry = transcript_storage.get_transcript(guild_id, aai_transcript_id, platform="aai")
+            
+            if stored_entry and stored_entry.get("backup_url"):
+                # Fetch transcript from Discord backup
+                await self.update_status("⏳ Đang tải transcript từ backup...")
+                try:
+                    from services import assemblyai_transcript
+                    backup_data = await transcript_storage.fetch_transcript_data(stored_entry["backup_url"])
+                    if backup_data:
+                        transcript = assemblyai_transcript.Transcript.from_dict({
+                            "id": aai_transcript_id,
+                            "title": stored_entry.get("title", self.title),
+                            "duration": stored_entry.get("duration", 0),
+                            "paragraphs": backup_data
+                        })
+                        self.transcript = transcript.to_text()
+                        await self.update_status(f"✅ Transcript từ backup ({len(transcript.paragraphs)} paragraphs)")
+                        logger.info(f"Using stored transcript: {aai_transcript_id}")
+                except Exception as e:
+                    logger.warning(f"Failed to fetch backup transcript: {e}")
+                    stored_entry = None  # Will check lecture_cache or re-transcribe
+            
+            # Fallback: check old lecture_cache (backward compat)
+            if not transcript and user_assemblyai_key:
+                aai_key_hash = hashlib.md5(user_assemblyai_key.encode()).hexdigest()[:8]
+                transcript_stage_name = f"transcript_{aai_key_hash}"
+                transcript_stage = lecture_cache.get_stage(self.cache_id, transcript_stage_name)
+                if transcript_stage and transcript_stage.get("data"):
+                    from services import assemblyai_transcript
+                    transcript = assemblyai_transcript.Transcript.from_dict(transcript_stage["data"])
+                    self.transcript = transcript.to_text()
+                    await self.update_status(f"✅ Transcript từ cache ({len(transcript.paragraphs)} paragraphs)")
+                    logger.info(f"Using lecture_cache transcript: {len(transcript.paragraphs)} paragraphs")
+            
+            if not transcript and user_assemblyai_key:
                 # Start AssemblyAI transcription (runs in background)
                 await self.update_status("⏳ Đang upload video và transcribe (~6 phút)...")
                 try:
@@ -568,12 +667,29 @@ class VideoLectureProcessor:
                     async def transcribe_assemblyai():
                         result = await assemblyai_transcript.transcribe_file(
                             video_path, user_assemblyai_key, self.title,
-                            cache_id=self.cache_id  # Enable upload_url caching
+                            cache_id=self.cache_id  # Enable upload_url caching for resume
                         )
-                        # Save to cache immediately after completion
-                        lecture_cache.save_stage(self.cache_id, "transcript", {
-                            "data": result.to_dict()
-                        })
+                        
+                        # Save to persistent storage + Discord archive
+                        # Convert paragraphs to serializable dicts
+                        paragraphs_data = result.to_dict()["paragraphs"]
+                        entry, is_new = transcript_storage.save_transcript(
+                            guild_id=guild_id,
+                            transcript_id=aai_transcript_id,
+                            title=self.title,
+                            platform="aai",
+                            transcript_data=paragraphs_data,  # Will be uploaded to Discord
+                            video_url=self.youtube_url,
+                            duration=result.duration,
+                        )
+                        
+                        if is_new:
+                            # Upload full transcript to Discord archive
+                            await transcript_storage.upload_to_discord(
+                                self.interaction.client, guild_id, entry
+                            )
+                            logger.info(f"Saved new AAI transcript: {aai_transcript_id}")
+                        
                         return result
                     assemblyai_task = asyncio.create_task(transcribe_assemblyai())
                     
@@ -623,45 +739,51 @@ class VideoLectureProcessor:
                     try:
                         await process_slides_inner()
                         return  # Success
-                    except Exception as e:
-                        error_msg = f"Lỗi slides: {str(e)[:100]}"
+                    except SlidesError as e:
+                        # Clear error from slides processing - show to user directly
+                        error_msg = str(e)
                         logger.warning(f"Slides processing failed (attempt {attempt + 1}): {e}")
-                        
-                        if attempt >= max_retries - 1:
-                            # Max retries reached - ask user
-                            error_msg += f" (đã thử {max_retries} lần)"
-                        
-                        # Show error view and wait for user choice
-                        view = SlidesErrorView(self, error_msg)
-                        try:
-                            if self.status_msg:
-                                await self.status_msg.edit(
-                                    content=f"❌ {error_msg}",
-                                    view=view
-                                )
-                            else:
-                                self.status_msg = await self.interaction.followup.send(
-                                    f"❌ {error_msg}",
-                                    view=view,
-                                    ephemeral=True,
-                                    wait=True
-                                )
-                        except Exception:
-                            # Fallback - continue without slides
-                            logger.warning("Could not show slides error view, continuing without slides")
-                            self.slide_images = []
-                            return
-                        
-                        # Wait for user choice
-                        await view.wait()
-                        
-                        if view.choice == "continue":
-                            self.slide_images = []
-                            return
-                        elif view.choice == "retry":
-                            continue  # Retry loop
-                        else:  # cancel or timeout
-                            raise Exception("User cancelled slides processing")
+                    except Exception as e:
+                        error_msg = f"Lỗi slides: {str(e)[:150]}"
+                        logger.warning(f"Slides processing failed (attempt {attempt + 1}): {e}")
+                    
+                    # Show error view and wait for user choice
+                    view = SlidesErrorView(self, error_msg)
+                    try:
+                        if self.status_msg:
+                            await self.status_msg.edit(
+                                content=f"❌ {error_msg}",
+                                view=view
+                            )
+                        else:
+                            self.status_msg = await self.interaction.followup.send(
+                                f"❌ {error_msg}",
+                                view=view,
+                                ephemeral=True,
+                                wait=True
+                            )
+                    except Exception:
+                        # Fallback - continue without slides
+                        logger.warning("Could not show slides error view, continuing without slides")
+                        self.slide_images = []
+                        return
+                    
+                    # Wait for user choice
+                    await view.wait()
+                    
+                    if view.choice == "continue":
+                        self.slide_images = []
+                        return
+                    elif view.choice == "retry":
+                        continue  # Retry loop
+                    elif view.choice == "new_link":
+                        # Update slides URL and retry
+                        self.slides_url = view.new_slides_url
+                        # Clear any cached slides for this new URL
+                        lecture_cache.clear_stage(self.cache_id, "slides")
+                        continue  # Retry with new URL
+                    else:  # cancel or timeout
+                        raise Exception("User cancelled slides processing")
                 
                 # Fallback if all retries exhausted
                 self.slide_images = []
@@ -791,7 +913,13 @@ class VideoLectureProcessor:
             # =============================================
             # STAGE 4: Merge summaries with slides + transcript
             # =============================================
-            if len(summaries) > 1:
+            # Check cache first
+            merge_cache = lecture_cache.get_stage(self.cache_id, "merge")
+            if merge_cache and merge_cache.get("result"):
+                final_summary = merge_cache["result"]
+                await self.update_status("✅ Merge summary từ cache")
+                logger.info("Using cached merge summary")
+            elif len(summaries) > 1:
                 await self.update_status("⏳ Đang tổng hợp các phần...")
                 await asyncio.sleep(RATE_LIMIT_WAIT)
                 
@@ -802,8 +930,50 @@ class VideoLectureProcessor:
                     full_transcript=self.transcript or "",
                     api_key=user_gemini_key
                 )
+                
+                # Save to cache
+                lecture_cache.save_stage(self.cache_id, "merge", {
+                    "result": final_summary
+                })
+                logger.info("Saved merge summary to cache")
             else:
                 final_summary = summaries[0]
+            
+            # =============================================
+            # STAGE 4.5: Slide Matching (if slides exist)
+            # =============================================
+            if self.slide_images and user_gemini_key:
+                # Check cache first
+                slide_match_cache = lecture_cache.get_stage(self.cache_id, "slide_match")
+                if slide_match_cache and slide_match_cache.get("result"):
+                    final_summary = slide_match_cache["result"]
+                    await self.update_status("✅ Slide matching từ cache")
+                    logger.info("Using cached slide matching result")
+                else:
+                    await self.update_status("⏳ Đang chèn slides vào nội dung...")
+                    try:
+                        import base64
+                        # Load slide images as base64
+                        slide_images_b64 = []
+                        for path in self.slide_images:
+                            with open(path, 'rb') as f:
+                                slide_images_b64.append(base64.b64encode(f.read()).decode())
+                        
+                        # Call Gemini VLM for slide matching
+                        matched_summary = await gemini.match_slides_to_summary(
+                            final_summary,
+                            slide_images_b64,
+                            api_key=user_gemini_key
+                        )
+                        
+                        # Save to cache
+                        lecture_cache.save_stage(self.cache_id, "slide_match", {
+                            "result": matched_summary
+                        })
+                        final_summary = matched_summary
+                        logger.info(f"Slide matching completed, matched to {len(self.slide_images)} slides")
+                    except Exception as e:
+                        logger.warning(f"Slide matching failed: {e}, using summary without slides")
             
             # Post-process: Convert timestamps to clickable links
             # 1. Format TOC entries: [-"TOPIC"- | -SECONDS-] -> [MM:SS - TOPIC](url)
@@ -811,10 +981,50 @@ class VideoLectureProcessor:
             # 2. Format inline timestamps: [-SECONDSs-] -> [[MM:SS]](url)
             final_summary = gemini.format_video_timestamps(final_summary, self.youtube_url)
             
-            # =============================================
             # STAGE 5: Send to channel with slides
             # =============================================
+            # Process LaTeX formulas:
+            # - $$...$$ (block): Render to images
+            # - $...$ (inline): Convert to Unicode
+            final_summary, latex_images = gemini.process_latex_formulas(final_summary)
+            
             header = f"🎓 **{self.title}**\n🔗 <{self.youtube_url}>\n\n"
+            
+            # Helper to send LaTeX images embedded in text
+            async def send_with_latex_images(channel, text: str, latex_imgs: list):
+                """Send text with embedded LaTeX images"""
+                if not latex_imgs:
+                    await send_chunked(channel, text)
+                    return
+                
+                # Split text by LaTeX placeholders and send with images
+                remaining_text = text
+                for placeholder, img_path in latex_imgs:
+                    if placeholder in remaining_text:
+                        parts = remaining_text.split(placeholder, 1)
+                        if parts[0].strip():
+                            await send_chunked(channel, parts[0])
+                        
+                        # Send the LaTeX image
+                        try:
+                            file = discord.File(img_path, filename="formula.png")
+                            await channel.send(file=file)
+                            await asyncio.sleep(0.3)
+                        except Exception as e:
+                            logger.warning(f"Failed to send LaTeX image: {e}")
+                        
+                        remaining_text = parts[1] if len(parts) > 1 else ""
+                
+                if remaining_text.strip():
+                    await send_chunked(channel, remaining_text)
+                
+                # Cleanup LaTeX images
+                for _, img_path in latex_imgs:
+                    try:
+                        if os.path.exists(img_path):
+                            os.remove(img_path)
+                    except Exception:
+                        pass
             
             # Check if we have slides to embed
             if self.slide_images:
@@ -822,7 +1032,7 @@ class VideoLectureProcessor:
                 from utils.discord_utils import send_chunked_with_pages
                 parsed_parts = gemini.parse_pages_and_text(header + final_summary)
                 
-                has_pages = any(page_num is not None for _, page_num in parsed_parts)
+                has_pages = any(part[1] is not None for part in parsed_parts)
                 logger.info(f"Parsed {len(parsed_parts)} parts, has_pages={has_pages}")
                 
                 if has_pages:
@@ -830,8 +1040,8 @@ class VideoLectureProcessor:
                         self.interaction.channel, parsed_parts, self.slide_images
                     )
                 else:
-                    # No page markers, send text only
-                    await send_chunked(self.interaction.channel, header + final_summary)
+                    # No page markers, send text only (with LaTeX images if any)
+                    await send_with_latex_images(self.interaction.channel, header + final_summary, latex_images)
                 
                 # Cleanup slide images
                 slides_service.cleanup_slide_images(self.slide_images)
@@ -850,8 +1060,8 @@ class VideoLectureProcessor:
                     )
                     cleanup_files(frame_paths)
                 else:
-                    await send_chunked(self.interaction.channel, header + final_summary)
-            
+                    # Send with LaTeX images if any
+                    await send_with_latex_images(self.interaction.channel, header + final_summary, latex_images)
             # =============================================
             # STAGE 6: Send slides footer/attachment
             # =============================================
