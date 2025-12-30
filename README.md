@@ -112,6 +112,24 @@ src/
     └── discord_utils.py       # Chunked message sending + pages
 ```
 
+## Testing
+
+```bash
+# Run all lecture tests
+conda run -n rin pytest tests/lecture/ -v
+
+# Run specific test file
+pytest tests/lecture/test_chat_processing.py -v
+pytest tests/lecture/test_latex.py -v
+```
+
+| Test File | Coverage |
+|-----------|----------|
+| `test_chat_processing.py` | Chat parsing, link extraction, filtering |
+| `test_link_extraction.py` | PDF link extraction, formatting |
+| `test_output_parsing.py` | Timestamp markers, page markers, multi-doc |
+| `test_latex.py` | LaTeX → Unicode, image rendering |
+
 ## Meeting Summary Pipeline
 
 ```mermaid

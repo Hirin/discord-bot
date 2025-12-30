@@ -394,9 +394,9 @@ def format_external_links(text: str) -> str:
     import re
     
     # Pattern to find URLs NOT in markdown links [text](url) or already wrapped
-    # Negative lookbehind: not preceded by (< or ](
-    # Negative lookahead: not followed by )> or just >
-    url_pattern = r'(?<!](<)(?<!<)(https?://[^\s\)<>]+)(?!>)'
+    # Negative lookbehind: not preceded by ]( or <
+    # Negative lookahead: not followed by >
+    url_pattern = r'(?<!\]\()(?<!<)(https?://[^\s\)<>]+)(?!>)'
     
     def wrap_url(match):
         url = match.group(1)

@@ -24,7 +24,6 @@ data/
 scripts/
 
 # Test files
-test_*.py
 *.mp4
 gemini_*.md
 

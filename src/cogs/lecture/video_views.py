@@ -11,6 +11,11 @@ from typing import Optional
 from services import gemini, video_download, video, lecture_cache, prompts, latex_utils
 from services.video import format_timestamp, cleanup_files
 from services.slides import SlidesError
+from services.lecture_utils import (
+    preprocess_chat_session, 
+    extract_links_from_chat, 
+    format_chat_links_for_prompt
+)
 from utils.discord_utils import send_chunked
 
 logger = logging.getLogger(__name__)
@@ -77,137 +82,8 @@ class LectureSourceView(discord.ui.View):
         await interaction.response.edit_message(content="✅ Đã đóng", embed=None, view=None)
 
 
-def preprocess_chat_session(raw_text: str) -> str:
-    """
-    Filter junk from chat session text using robust parsing.
-    Logic:
-    1. Parse messages (Name, Timestamp, Content)
-    2. Clean content (remove reaction lines, Collapse All, headers)
-    3. Filter: Keep if has link OR length >= 6 words
-    4. Format: JSON string matching user request
-    """
-    import re
-    import json
-    
-    lines = [line_item.strip() for line_item in raw_text.split('\n')]
-    
-    # Patterns
-    time_pat = re.compile(r'^(\d{1,2}:\d{2}(?::\d{2})?)(?:\s*\(Edited\))?$')
-    reaction_count_pat = re.compile(r'^\d+$')
-    emoji_pat = re.compile(r'^[\U0001F300-\U0001F9FF\u2600-\u26FF\u2700-\u27BF]+$')
-    
-    # 1. Identify start indices
-    msg_starts = []
-    i = 0
-    while i < len(lines) - 1:
-        if time_pat.match(lines[i+1]) and lines[i]: 
-            msg_starts.append(i)
-            i += 1 
-        i += 1
-        
-    filtered_messages = []
-    
-    for idx, start_line_idx in enumerate(msg_starts):
-        name = lines[start_line_idx]
-        timestamp = time_pat.match(lines[start_line_idx+1]).group(1)
-        
-        start_content = start_line_idx + 2
-        end_content = msg_starts[idx+1] if idx + 1 < len(msg_starts) else len(lines)
-        
-        clean_lines = []
-        for line in lines[start_content:end_content]:
-            if not line:
-                continue
-            if line == "Collapse All":
-                continue
-            if emoji_pat.match(line):
-                continue
-            if reaction_count_pat.match(line):
-                continue
-            clean_lines.append(line)
-            
-        full_content = "\n".join(clean_lines).strip()
-        
-        if not full_content:
-            continue
-            
-        # Filter Logic: Keep if Link OR >= 6 Words OR >= 3 Lines (code blocks)
-        has_link = 'http' in full_content.lower()
-        word_count = len(full_content.split())
-        line_count = len(clean_lines)
-        
-        is_junk = (word_count < 6) and (not has_link) and (line_count < 2)
-        
-        if not is_junk:
-            filtered_messages.append({
-                "name": name,
-                "time": timestamp,
-                "content": full_content
-            })
-            
-    # Return as JSON string
-    return json.dumps(filtered_messages, ensure_ascii=False, indent=2)
-
-
-def extract_links_from_chat(chat_text: str) -> list[str]:
-    """
-    Extract URLs from chat session text, filtering out Kahoot and other gaming links.
-    
-    Args:
-        chat_text: Preprocessed chat session text
-        
-    Returns:
-        List of URLs (already wrapped in <>)
-    """
-    import re
-    
-    # Find all URLs
-    url_pattern = r'https?://[^\s<>"\'\)]+[^\s<>"\'\)\.\,\;]'
-    urls = re.findall(url_pattern, chat_text)
-    
-    # Filter out unwanted links
-    exclude_patterns = [
-        r'kahoot\.it',
-        r'kahoot\.com',
-        r'discord\.com',
-        r'discord\.gg',
-        r'youtube\.com/live',  # Live stream links often not useful
-    ]
-    exclude_regex = [re.compile(p, re.IGNORECASE) for p in exclude_patterns]
-    
-    filtered = []
-    seen = set()
-    for url in urls:
-        # Skip if matches exclude pattern
-        if any(p.search(url) for p in exclude_regex):
-            continue
-        # Skip duplicates
-        if url in seen:
-            continue
-        seen.add(url)
-        filtered.append(f"<{url}>")
-    
-    return filtered
-
-
-def format_chat_links_for_prompt(links: list[str]) -> str:
-    """
-    Format chat links for injection into merge prompt.
-    
-    Args:
-        links: List of URLs (already wrapped in <>)
-        
-    Returns:
-        Formatted string for prompt
-    """
-    if not links:
-        return ""
-    
-    lines = ["**Links từ chat session:**"]
-    for url in links:
-        lines.append(f"- {url}")
-    
-    return "\n".join(lines)
+# Chat processing functions are now in services/lecture_utils.py
+# and imported at the top of this file
 
 
 class VideoInputModal(discord.ui.Modal, title="Video Lecture Summary"):
@@ -540,6 +416,13 @@ async def prompt_for_chat_session(
             # Preprocess to filter junk
             chat_content = preprocess_chat_session(raw_content)
             
+            # Count messages from JSON output
+            import json
+            try:
+                msg_count = len(json.loads(chat_content))
+            except Exception:
+                msg_count = 0
+            
             # Delete user's message
             try:
                 await msg.delete()
@@ -548,7 +431,7 @@ async def prompt_for_chat_session(
             
             await interaction.followup.send(
                 f"✅ Đã nhận chat session: {txt_attachment.filename}\n"
-                f"📊 Raw: {len(raw_content)} chars → Filtered: {len(chat_content)} chars",
+                f"📊 Đã lọc và giữ lại **{msg_count} tin nhắn** (format JSON)",
                 ephemeral=True
             )
             
@@ -749,6 +632,7 @@ class VideoLectureProcessor:
         self.temp_files: list[str] = []
         self.video_path: Optional[str] = None
         self.slide_images: list[str] = []  # For PDF slides
+        self.pdf_path: Optional[str] = None  # Path to PDF file for link extraction
         self.transcript: Optional[str] = None  # For AssemblyAI transcript
         # Generate cache ID based on video URL, slides URL, and user ID
         self.cache_id = lecture_cache.generate_pipeline_id(youtube_url, slides_url, user_id)
@@ -960,14 +844,14 @@ class VideoLectureProcessor:
                 
                 # Try to download and convert (raises exception on failure)
                 if self.slides_url.startswith('/tmp/') and os.path.exists(self.slides_url):
-                    pdf_path = self.slides_url
-                    self.temp_files.append(pdf_path)
+                    self.pdf_path = self.slides_url
+                    self.temp_files.append(self.pdf_path)
                 else:
-                    pdf_path = f"/tmp/slides_{self.cache_id}.pdf"
-                    await video_download.download_video(self.slides_url, pdf_path)
-                    self.temp_files.append(pdf_path)
+                    self.pdf_path = f"/tmp/slides_{self.cache_id}.pdf"
+                    await video_download.download_video(self.slides_url, self.pdf_path)
+                    self.temp_files.append(self.pdf_path)
                 
-                self.slide_images = slides_service.pdf_to_images(pdf_path)
+                self.slide_images = slides_service.pdf_to_images(self.pdf_path)
                 logger.info(f"Converted {len(self.slide_images)} slide pages")
                 
                 lecture_cache.save_stage(self.cache_id, "slides", {
