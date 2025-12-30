@@ -292,9 +292,21 @@ class PreviewProcessor:
             # Run Gemini API call and PDF conversion in parallel
             async def call_gemini():
                 """Call Gemini with all PDF files using shared service"""
+                # Extract links from all PDFs for References section
+                all_pdf_links = []
+                for pdf_path in pdf_files:
+                    links = slides_service.extract_links_from_pdf(pdf_path)
+                    all_pdf_links.extend(links)
+                
+                pdf_links_str = ""
+                if all_pdf_links:
+                    pdf_links_str = slides_service.format_pdf_links_for_prompt(all_pdf_links)
+                    logger.info(f"Extracted {len(all_pdf_links)} links from {len(pdf_files)} PDFs")
+                
                 return await gemini.summarize_pdfs(
                     pdf_paths=pdf_files,
                     prompt=prompts.PREVIEW_SLIDES_PROMPT,
+                    pdf_links=pdf_links_str,
                     api_key=user_gemini_key,
                     thinking_level="high",
                 )

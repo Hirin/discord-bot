@@ -158,3 +158,63 @@ def cleanup_slide_images(image_paths: list[str]):
                 os.rmdir(images_dir)
         except Exception as e:
             logger.warning(f"Failed to remove directory: {e}")
+
+
+def extract_links_from_pdf(pdf_path: str) -> list[tuple[int, str]]:
+    """
+    Extract all hyperlinks from a PDF file.
+    
+    Args:
+        pdf_path: Path to PDF file
+        
+    Returns:
+        List of tuples (page_number, url) with 1-indexed page numbers
+    """
+    try:
+        import fitz  # PyMuPDF
+    except ImportError:
+        logger.warning("PyMuPDF not installed. Run: pip install pymupdf")
+        return []
+    
+    if not os.path.exists(pdf_path):
+        logger.warning(f"PDF file not found: {pdf_path}")
+        return []
+    
+    links = []
+    try:
+        doc = fitz.open(pdf_path)
+        
+        for page_num, page in enumerate(doc, 1):
+            for link in page.get_links():
+                uri = link.get("uri")
+                if uri and uri.startswith(("http://", "https://")):
+                    links.append((page_num, uri))
+        
+        doc.close()
+        logger.info(f"Extracted {len(links)} links from PDF")
+        
+    except Exception as e:
+        logger.error(f"Failed to extract links from PDF: {e}")
+    
+    return links
+
+
+def format_pdf_links_for_prompt(links: list[tuple[int, str]]) -> str:
+    """
+    Format PDF links for injection into prompt.
+    
+    Args:
+        links: List of (page_number, url) tuples
+        
+    Returns:
+        Formatted string for prompt
+    """
+    if not links:
+        return ""
+    
+    lines = ["**Links từ slides:**"]
+    for page_num, url in links:
+        lines.append(f"- Page {page_num}: <{url}>")
+    
+    return "\n".join(lines)
+

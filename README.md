@@ -19,12 +19,12 @@ Meeting summary bot với Fireflies.ai + GLM (Z.AI) và Lecture summarization v�
 - 🧠 **Gemini API** - Dùng Gemini 3 Flash với Thinking Mode
 - 🎙️ **AssemblyAI** - Transcribe audio từ video (~100h free/month)
 - 📄 **PDF Slides** - Upload slides minh họa (Drive link hoặc file)
-- 💬 **Chat Session Upload** - Upload chat .txt với Q&A, community insights (auto filter junk)
-- 🔗 **Smart URL Formatting** - Auto wrap URLs với `<>` để hide Discord embeds
-- 🔢 **LaTeX Support** - Render block formulas $$...$$ to images, convert inline $...$ to Unicode
+- 💬 **Chat Session Upload** - Upload chat .txt với Q&A, Quiz, community insights
+- 📚 **Auto References** - Extract links từ PDF slides và chat, model mô tả chức năng
+- 🎯 **Quiz Extraction** - Tách Q&A và Quiz riêng, giải thích đáp án chi tiết
+- 🔢 **LaTeX Support** - Render block formulas $$...$$ to images, inline $...$ to Unicode
 - 🔀 **Parallel Processing** - Download + Transcribe + Slides xử lý song song
 - 💾 **Multi-stage Cache** - Cache video, transcript, slides, và part summaries
-- 📄 **Slides Footer** - Auto attach Drive link hoặc re-upload file sau summary
 - 📑 **Preview Mode** - Tóm tắt nhiều PDF trước buổi học (1-5 files)
 
 ## Commands
@@ -53,7 +53,7 @@ Meeting summary bot với Fireflies.ai + GLM (Z.AI) và Lecture summarization v�
 | Action | Description |
 |--------|-------------|
 | 🎬 Video Mode | Tóm tắt từ video (Google Drive/Direct URL) với Gemini |
-| � Transcript Mode | Tóm tắt từ Fireflies transcript (giống Meeting) |
+| 📝 Transcript Mode | Tóm tắt từ Fireflies transcript (giống Meeting) |
 | 📄 Preview Mode | Tóm tắt nhiều PDF documents (1-5 files) |
 | 🔑 Config Gemini API | Set API key Gemini (per-user) |
 | 🎙️ Config AssemblyAI API | Set API key AssemblyAI (per-user) |
@@ -63,13 +63,13 @@ Meeting summary bot với Fireflies.ai + GLM (Z.AI) và Lecture summarization v�
 | Feature | Description |
 |---------|-------------|
 | 🤖 **Deep Thinking** | VLM/LLM sử dụng thinking mode cho kết quả sâu hơn |
-| 📄 **Gemini Multimodal Meeting** | Xử lý PDF slides + transcript trong 1 call (không cần VLM riêng) |
-| 📄 **VLM Slide Extraction (GLM)** | Fallback: Trích xuất content từ slides với GLM-4.6V-Flash |
+| 📄 **Gemini Multimodal** | Xử lý PDF slides + transcript trong 1 call |
+| 📄 **VLM Slide Extraction** | Fallback: Trích xuất content từ slides với GLM |
 | 🎬 **Video + Slides + Transcript** | Gemini multimodal: video + images + text |
-| � **Community Insights Extraction** | Tự động lọc và trích chat session (Q&A, explanations, links) |
-| 🔗 **Smart URL Formatting** | Auto wrap external links với `<>` để hide Discord embeds |
-| 🔢 **LaTeX Rendering** | Block formulas → images, inline formulas → Unicode symbols |
-| �💾 **Multi-layer Cache** | Video, transcript, slides, part summaries đều được cache |
+| 💬 **Community Insights** | Tự động lọc chat session (Q&A, Quiz, explanations) |
+| � **Auto References** | Extract links từ PDF/chat, model mô tả chức năng |
+| 🔢 **LaTeX Rendering** | Block formulas → images, inline → Unicode symbols |
+| 💾 **Multi-layer Cache** | Video, transcript, slides, part summaries cached |
 | ⏱️ **Timestamp/Slide Links** | Convert `[-123s-]` và `[-PAGE:X-]` markers |
 | 🔄 **Error Recovery** | Retry buttons + Continue/Cancel options |
 

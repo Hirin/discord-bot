@@ -142,13 +142,12 @@ async def generate_lecture_summary(
 async def merge_summaries(
     summaries: list[str],
     merge_prompt: str,
-    slide_count: int = 0,
     full_transcript: str = "",
     extra_context: str = "",
+    chat_links: str = "",
     api_key: Optional[str] = None,
 ) -> str:
-    """Merge multiple part summaries into one, with slides, transcript, and extra context"""
-    from google.genai import types
+    """Merge multiple part summaries into one cohesive summary."""
     
     client = get_client(api_key)
     
@@ -161,36 +160,23 @@ async def merge_summaries(
     if len(full_transcript) > 50000:
         full_transcript = full_transcript[:50000] + "\n...(truncated)"
     
-    # Generate slide instructions based on count
-    if slide_count > 0:
-        slide_instructions = f"""Có {slide_count} trang slide
-- Chèn `[-PAGE:X-]` để minh họa slide trang X (X là số trang 1-indexed)
-- Chỉ chèn slide QUAN TRỌNG: diagram, công thức, bảng so sánh, code, hình minh họa
-- Tối đa 5-10 slides tùy độ phức tạp bài giảng
-- **QUY TẮC QUAN TRỌNG:**
-  - CHỈ chèn slide khi nội dung slide TRỰC TIẾP liên quan đến đoạn văn bản ngay trước đó
-  - Caption mô tả slide (trong ngoặc đơn sau slide) phải MÔ TẢ CHÍNH XÁC nội dung THỰC SỰ trong slide
-  - KHÔNG viết caption dựa trên nội dung văn bản xung quanh - hãy nhìn vào slide và mô tả những gì BẠN THẤY"""
-    else:
-        slide_instructions = "(Không có slide - KHÔNG tạo [-PAGE:X-] markers)"
-    
     # Format extra context section
     extra_context_section = ""
     if extra_context and extra_context.strip():
-        extra_context_section = f"\n\n**THÔNG TIN BỔ SUNG TỪ USER:**\n{extra_context}\n"
+        extra_context_section = f"{extra_context}"
     
     # Build prompt
     full_prompt = merge_prompt.format(
         parts_summary=parts_text,
-        slide_count=slide_count,
-        slide_instructions=slide_instructions,
         full_transcript=full_transcript if full_transcript else "(Không có transcript)",
         extra_context=extra_context_section,
+        chat_links=chat_links,
     )
     
-    logger.info(f"Merging {len(summaries)} summaries (slides={slide_count}, transcript={len(full_transcript)} chars, extra_context={len(extra_context)} chars)...")
+    logger.info(f"Merging {len(summaries)} summaries (transcript={len(full_transcript)} chars, extra_context={len(extra_context)} chars, links={len(chat_links)} chars)...")
     
     return await _call_gemini(client, full_prompt)
+
 
 
 async def summarize_meeting(
@@ -368,7 +354,7 @@ async def summarize_transcript(
 def format_video_timestamps(text: str, video_url: str) -> str:
     """
     Convert [-SECONDSs-] markers to clickable timestamp links.
-    Example: [-930s-] -> [[15:30]](<video_url&t=930>)
+    Example: [-930s-] -> [15:30](<video_url&t=930>)
     """
     import re
     
@@ -383,6 +369,7 @@ def format_video_timestamps(text: str, video_url: str) -> str:
     def replace_timestamp(match):
         seconds = int(match.group(1))
         mmss = seconds_to_mmss(seconds)
+        # Format: [text](<url>) - angle brackets suppress Discord embeds
         return f"[{mmss}](<{video_url}&t={seconds}>)"
     
     # Pattern: [-123s-] or [-1234s-]
@@ -402,7 +389,7 @@ def format_external_links(text: str) -> str:
     # Pattern to find URLs NOT in markdown links [text](url) or already wrapped
     # Negative lookbehind: not preceded by (< or ](
     # Negative lookahead: not followed by )> or just >
-    url_pattern = r'(?<![\(<])(?<!\]\()(?<!<)(https?://[^\s\)<>]+)(?![>\)])'
+    url_pattern = r'(?<!](<)(?<!<)(https?://[^\s\)<>]+)(?!>)'
     
     def wrap_url(match):
         url = match.group(1)
@@ -430,6 +417,7 @@ def format_toc_hyperlinks(text: str, video_url: str) -> str:
         topic = match.group(1).strip()
         seconds = int(match.group(2))
         mmss = seconds_to_mmss(seconds)
+        # Format: [text](<url>) - angle brackets suppress Discord embeds
         return f"[{mmss} - {topic}](<{video_url}&t={seconds}>)"
     
     # Pattern: [-"TOPIC"- | -SECONDSs-]
@@ -551,6 +539,7 @@ def cleanup_file(file, api_key: Optional[str] = None) -> None:
 async def summarize_pdfs(
     pdf_paths: list[str],
     prompt: str,
+    pdf_links: str = "",
     api_key: Optional[str] = None,
     thinking_level: str = "high",
 ) -> str:
@@ -560,6 +549,7 @@ async def summarize_pdfs(
     Args:
         pdf_paths: List of paths to PDF files
         prompt: The prompt to use for summarization
+        pdf_links: Formatted string of links extracted from PDFs
         api_key: Optional Gemini API key
         thinking_level: Thinking level for Gemini (minimal/low/medium/high)
     
@@ -569,6 +559,9 @@ async def summarize_pdfs(
     from google.genai import types
     
     client = get_client(api_key)
+    
+    # Format prompt with pdf_links
+    formatted_prompt = prompt.format(pdf_links=pdf_links if pdf_links else "(Không có links)")
     
     # Run sync operations in thread pool to avoid blocking event loop
     def _upload_and_generate():
@@ -580,10 +573,10 @@ async def summarize_pdfs(
                 logger.info(f"Uploaded PDF: {pdf_path} -> {uploaded.name}")
             
             # Build content with all files + prompt
-            contents = uploaded_files + [prompt]
+            contents = uploaded_files + [formatted_prompt]
             
             # Generate with thinking
-            logger.info(f"Calling Gemini with {len(pdf_paths)} PDFs, thinking={thinking_level}")
+            logger.info(f"Calling Gemini with {len(pdf_paths)} PDFs, thinking={thinking_level}, links={len(pdf_links)} chars")
             start = time.time()
             
             response = client.models.generate_content(
@@ -633,6 +626,7 @@ def make_youtube_timestamp_url(youtube_url: str, seconds: int) -> str:
 async def match_slides_to_summary(
     summary: str,
     slide_images_b64: list[str],
+    pdf_links: str = "",
     api_key: Optional[str] = None,
     max_slides: int = 60,
 ) -> str:
@@ -642,6 +636,7 @@ async def match_slides_to_summary(
     Args:
         summary: The merged summary text (without slide markers)
         slide_images_b64: List of base64 encoded slide images
+        pdf_links: Formatted string of links extracted from PDF
         api_key: Optional Gemini API key
         max_slides: Maximum number of slides to process
         
@@ -659,7 +654,10 @@ async def match_slides_to_summary(
     
     # Use all slides
     slides_to_use = slide_images_b64
-    logger.info(f"Matching {len(slides_to_use)} slides to summary")
+    logger.info(f"Matching {len(slides_to_use)} slides to summary (links={len(pdf_links)} chars)")
+    
+    # Format the prompt with pdf_links
+    prompt_with_links = SLIDE_MATCHING_PROMPT.format(pdf_links=pdf_links if pdf_links else "(Không có links)")
     
     def _call_gemini():
         # Build content with slides + prompt
@@ -673,7 +671,7 @@ async def match_slides_to_summary(
                 }
             })
         
-        content_parts.append({"text": SLIDE_MATCHING_PROMPT + summary})
+        content_parts.append({"text": prompt_with_links + summary})
         
         start = time.time()
         response = client.models.generate_content(

@@ -150,6 +150,67 @@ def preprocess_chat_session(raw_text: str) -> str:
     return '\n'.join(filtered_lines).strip()
 
 
+def extract_links_from_chat(chat_text: str) -> list[str]:
+    """
+    Extract URLs from chat session text, filtering out Kahoot and other gaming links.
+    
+    Args:
+        chat_text: Preprocessed chat session text
+        
+    Returns:
+        List of URLs (already wrapped in <>)
+    """
+    import re
+    
+    # Find all URLs
+    url_pattern = r'https?://[^\s<>"\'\)]+[^\s<>"\'\)\.\,\;]'
+    urls = re.findall(url_pattern, chat_text)
+    
+    # Filter out unwanted links
+    exclude_patterns = [
+        r'kahoot\.it',
+        r'kahoot\.com',
+        r'discord\.com',
+        r'discord\.gg',
+        r'youtube\.com/live',  # Live stream links often not useful
+    ]
+    exclude_regex = [re.compile(p, re.IGNORECASE) for p in exclude_patterns]
+    
+    filtered = []
+    seen = set()
+    for url in urls:
+        # Skip if matches exclude pattern
+        if any(p.search(url) for p in exclude_regex):
+            continue
+        # Skip duplicates
+        if url in seen:
+            continue
+        seen.add(url)
+        filtered.append(f"<{url}>")
+    
+    return filtered
+
+
+def format_chat_links_for_prompt(links: list[str]) -> str:
+    """
+    Format chat links for injection into merge prompt.
+    
+    Args:
+        links: List of URLs (already wrapped in <>)
+        
+    Returns:
+        Formatted string for prompt
+    """
+    if not links:
+        return ""
+    
+    lines = ["**Links từ chat session:**"]
+    for url in links:
+        lines.append(f"- {url}")
+    
+    return "\n".join(lines)
+
+
 class VideoInputModal(discord.ui.Modal, title="Video Lecture Summary"):
     """Modal for entering video URL and title"""
     
@@ -1108,12 +1169,20 @@ class VideoLectureProcessor:
                 await self.update_status("⏳ Đang tổng hợp các phần...")
                 await asyncio.sleep(RATE_LIMIT_WAIT)
                 
+                # Extract links from chat session for References section
+                chat_links_str = ""
+                if self.extra_context:
+                    chat_links = extract_links_from_chat(self.extra_context)
+                    if chat_links:
+                        chat_links_str = format_chat_links_for_prompt(chat_links)
+                        logger.info(f"Extracted {len(chat_links)} links from chat session")
+                
                 final_summary = await gemini.merge_summaries(
                     summaries, 
                     prompts.GEMINI_MERGE_PROMPT,
-                    slide_count=len(self.slide_images),
                     full_transcript=self.transcript or "",
                     extra_context=self.extra_context or "",
+                    chat_links=chat_links_str,
                     api_key=user_gemini_key
                 )
                 
@@ -1139,16 +1208,27 @@ class VideoLectureProcessor:
                     await self.update_status("⏳ Đang chèn slides vào nội dung...")
                     try:
                         import base64
+                        from services import slides as slides_service
+                        
+                        # Extract links from PDF for References section
+                        pdf_links_str = ""
+                        if self.pdf_path:
+                            pdf_links = slides_service.extract_links_from_pdf(self.pdf_path)
+                            if pdf_links:
+                                pdf_links_str = slides_service.format_pdf_links_for_prompt(pdf_links)
+                                logger.info(f"Extracted {len(pdf_links)} links from PDF")
+                        
                         # Load slide images as base64
                         slide_images_b64 = []
                         for path in self.slide_images:
                             with open(path, 'rb') as f:
                                 slide_images_b64.append(base64.b64encode(f.read()).decode())
                         
-                        # Call Gemini VLM for slide matching
+                        # Call Gemini VLM for slide matching with PDF links
                         matched_summary = await gemini.match_slides_to_summary(
                             final_summary,
                             slide_images_b64,
+                            pdf_links=pdf_links_str,
                             api_key=user_gemini_key
                         )
                         
@@ -1161,12 +1241,10 @@ class VideoLectureProcessor:
                     except Exception as e:
                         logger.warning(f"Slide matching failed: {e}, using summary without slides")
             
-            # Post-process: Format links and timestamps
-            # 1. Wrap external URLs with <> to hide embeds (run FIRST before timestamp formatting)
-            final_summary = gemini.format_external_links(final_summary)
-            # 2. Format TOC entries: [-"TOPIC"- | -SECONDS-] -> [MM:SS - TOPIC](url)
+            # Post-process: Format timestamps (no need to wrap URLs - model already does it)
+            # 1. Format TOC entries: [-"TOPIC"- | -SECONDS-] -> [MM:SS - TOPIC](url)
             final_summary = gemini.format_toc_hyperlinks(final_summary, self.youtube_url)
-            # 3. Format inline timestamps: [-SECONDSs-] -> [[MM:SS]](url)
+            # 2. Format inline timestamps: [-SECONDSs-] -> [[MM:SS]](url)
             final_summary = gemini.format_video_timestamps(final_summary, self.youtube_url)
             
             # STAGE 5: Send to channel with slides

@@ -218,9 +218,9 @@ Hãy trích xuất CHI TIẾT nội dung bài giảng theo cấu trúc:
 ## 💡 Key Takeaways hoặc link references cần thiết
 - Điểm quan trọng nhất cần nhớ
 
-## ❓ Q&A *(nếu có)* - thường sẽ được giảng viên đọc lại, hoặc Quiz (nếu từ Quiz thì explain kết quả đáp án thêm)
+## ❓ Q&A *(nếu có)* - câu hỏi từ học viên (thường giảng viên đọc lại từ chat)
 - **Q:** Câu hỏi [-SECONDSs-]
-  - **A:** Trả lời
+- **A:** Trả lời
 
 ## 📝 Thông tin thêm (out-topic) *(nếu có)*
 - Chia sẻ kinh nghiệm, thông báo, tips từ giảng viên [-SECONDSs-]
@@ -264,9 +264,14 @@ Tiếp tục trích xuất NỘI DUNG MỚI trong phần này:
 ## 💡 Key Takeaways hoặc link references cần thiết bổ sung
 - Điểm quan trọng mới
 
-## ❓ Q&A / Quiz - thường sẽ được giảng viên đọc lại
-- **Q:** Câu hỏi từ học viên hoặc câu hỏi quiz? [-SECONDSs-]
-- **A:** Trả lời chi tiết (nếu quiz thì giải thích tại sao đáp án đúng/sai)
+## ❓ Q&A *(nếu có)*
+- **Q:** Câu hỏi từ học viên [-SECONDSs-]
+- **A:** Trả lời
+
+## 🎯 Quiz *(nếu có - thường ở cuối video)*
+- **Câu hỏi quiz:** Nội dung câu hỏi [-SECONDSs-]
+- **Đáp án đúng:** [A/B/C/D]
+- **Giải thích:** Tại sao đáp án này đúng/sai
 
 ## 📝 Thông tin thêm (out-topic) *(nếu có)*
 - Chia sẻ kinh nghiệm, thông báo, tips mới từ giảng viên [-SECONDSs-]
@@ -281,34 +286,35 @@ Chỉ trích xuất nội dung MỚI, ĐẦY ĐỦ, CHI TIẾT và KHÔNG lặp 
 
 
 GEMINI_MERGE_PROMPT = """
-**Quy tắc format QUAN TRỌNG:**
-- **Timestamps:** dùng format `[-SECONDSs-]` với SECONDS là số giây (VD: [-930s-] cho 15:30)
-- **Mục lục (TOC):** dùng format `[-"TÊN SECTION"- | -SECONDSs-]`
-  - VD đúng: `[-"Giới thiệu Text Classification"- | -504s-]`
-  - VD sai: `[-Giới thiệu- | -504-]` (thiếu ngoặc kép, thiếu 's')
-- Viết CHI TIẾT và ĐẦY ĐỦ để học viên có thể ôn lại mà không cần xem lại video
+**⚠️ QUY TẮC QUAN TRỌNG - BẮT BUỘC TUÂN THỦ:**
+1. **KHÔNG ĐƯỢC XÓA** bất kỳ thông tin nào từ các parts
+2. Chỉ **GỘP nội dung trùng lặp** giữa các parts
+3. **TỔNG HỢP = Part1 + PartN + Chat Session** (thêm info, không bớt)
+4. Viết CHI TIẾT để học viên ôn lại mà không cần xem video
 
-**SLIDES:** {slide_instructions}
+**Quy tắc format:**
+- Timestamps: `[-SECONDSs-]` (VD: [-930s-] cho 15:30)
+- Mục lục: `[-"TÊN SECTION"- | -SECONDSs-]`
 
-**TRANSCRIPT ĐẦY ĐỦ (tham khảo timestamps):**
+**TRANSCRIPT (tham khảo timestamps):**
 {full_transcript}
 
 ---
-Thông tin thêm (Chat session, requests,...):
-
+**THÔNG TIN BỔ SUNG (Chat session, links):**
 {extra_context}
++++
+{chat_links}
 ---
-Dưới đây là tổng hợp từ nhiều phần của một bài giảng dài.
-
+**CÁC PHẦN ĐÃ TỔNG HỢP:**
 {parts_summary}
 
 ---
 
-Hãy tổng hợp thành MỘT bài HOÀN CHỈNH và CHI TIẾT:
+Hãy tổng hợp thành MỘT bài HOÀN CHỈNH, GIỮ NGUYÊN TẤT CẢ thông tin:
 
 ## 📚 Tổng quan bài học
-- **Chủ đề chính:** (Mô tả đầy đủ topic của buổi học)
-- **Mục tiêu:** (Sau buổi học này, học viên sẽ nắm được gì)
+- **Chủ đề chính:** (Mô tả đầy đủ topic)
+- **Mục tiêu:** (Học xong sẽ nắm được gì)
 - **Phạm vi:** (Các nội dung được cover)
 
 ## 🔑 Tất cả khái niệm chính
@@ -316,36 +322,42 @@ Hãy tổng hợp thành MỘT bài HOÀN CHỈNH và CHI TIẾT:
 
 **1. [Tên phần/Section]**
 - **Khái niệm A:** Định nghĩa ĐẦY ĐỦ [-SECONDSs-]
-[-PAGE:X-]
 - **Khái niệm B:** Giải thích rõ ràng [-SECONDSs-]
 
 **2. [Tên phần tiếp theo]**
 - ...
 
 ## 📊 Các ví dụ minh họa quan trọng
-- **Ví dụ 1:** Mô tả chi tiết case study, tính toán, hoặc demo [-SECONDSs-]
-[-PAGE:X-]
+- **Ví dụ 1:** Mô tả chi tiết case study, tính toán, demo [-SECONDSs-]
 - **Ví dụ 2:** ... [-SECONDSs-]
 
-## 💡 Key Takeaways hoặc link references tổng hợp - có thể bổ sung từ chat session (nếu có)
-- Điểm quan trọng 1 (giải thích ngắn gọn tại sao quan trọng)
+## 💡 Key Takeaways
+- Điểm quan trọng 1 (giải thích tại sao quan trọng)
 - Điểm quan trọng 2 ...
 - Common mistakes/pitfalls cần tránh
 
-## ❓ Q&A / Quiz - có thể bổ sung từ chat session (nếu có)
-- **Q:** Câu hỏi từ học viên hoặc câu hỏi quiz? [-SECONDSs-]
-- **A:** Trả lời chi tiết (nếu quiz thì giải thích tại sao đáp án đúng/sai)
+## ❓ Q&A *(tổng hợp từ các parts)*
+- **Q:** Câu hỏi [-SECONDSs-]
+- **A:** Trả lời
+
+## 🎯 Quiz *(nếu có)*
+- **Câu hỏi quiz:** Nội dung [-SECONDSs-]
+- **Đáp án đúng:** [Xanh/Đỏ/Xanh lá/Vàng]
+- **Giải thích:** Tại sao đáp án này đúng/sai
 
 ## 💬 Community Insights *(từ chat session nếu có)*
-- Giải thích hay, ví dụ dễ hiểu từ học viên/TA trong chat
-- Ví dụ: analogies, intuition, tips thực hành từ cộng đồng
+- Giải thích hay, ví dụ dễ hiểu từ học viên/TA
 - Ghi credit cho người chia sẻ nếu có tên
 
 ## 📝 Thông tin thêm (out-topic) *(nếu có)*
-- Chia sẻ kinh nghiệm, thông báo, tips từ giảng viên/TA
+- Chia sẻ kinh nghiệm, thông báo, tips
+
+## 📚 References *(nếu có links từ chat)*
+- **[Mô tả chức năng link]**: <url>
+- Mô tả ngắn gọn link dùng để làm gì dựa trên context chat
 
 ## 📂 Mục lục (Table of Contents) - LUÔN ĐẶT Ở CUỐI CÙNG
-⚠️ **QUAN TRỌNG: Mục lục PHẢI là phần cuối cùng của bài tóm tắt. KHÔNG được đưa lên trước các section khác.**
+⚠️ **Mục lục PHẢI là phần cuối cùng.**
 - [-"Tên section đầu tiên"- | -SECONDSs-]
 - [-"Tên section tiếp theo"- | -SECONDSs-]
 - ...
@@ -360,12 +372,16 @@ PREVIEW_SLIDES_PROMPT = """Đây là tài liệu/slides cho một buổi học. 
 
 **Nhiệm vụ:** Tổng hợp NỘI DUNG CHÍNH từ TẤT CẢ tài liệu để học viên chuẩn bị trước buổi học.
 
+**Links từ tài liệu (nếu có):**
+{pdf_links}
+
 **Quy tắc quan trọng:**
 - **Tổng hợp theo chủ đề**: Gộp nội dung liên quan từ nhiều tài liệu, KHÔNG tách theo từng file
 - **Mỗi nội dung quan trọng PHẢI có ít nhất 1 slide minh họa**
 - **Slide marker:** `[-DOC{N}:PAGE:{X}-]` với N = số thứ tự tài liệu (1,2...), X = số trang
 - Tổng cộng 10-15 slides quan trọng nhất
-- Ưu tiên slides có: Diagram, công thức, bảng so sánh, code, hình minh họa
+- ƯU TIÊN slides có: Diagram, công thức, bảng so sánh, code demo, hình minh họa
+- **References**: Nếu có links, thêm section "📚 References" mô tả chức năng mỗi link
 
 **Output format:**
 
@@ -431,13 +447,16 @@ SLIDE_MATCHING_PROMPT = """Bạn là chuyên gia matching slide với nội dung
 Bạn được cho:
 1. BẢN TÓM TẮT bài giảng (có nhiều sections và keypoints)
 2. CÁC HÌNH SLIDE từ PDF (đánh số từ 1 đến N)
+3. LINKS TỪ PDF (nếu có): {pdf_links}
 
-NHIỆM VỤ: Chèn marker [-PAGE:X:"Mô tả slide"-] vào đúng vị trí, ngay sau keypoint tương ứng.
+NHIỆM VỤ: 
+1. Chèn marker [-PAGE:X:"Mô tả slide"-] vào đúng vị trí
+2. Thêm section "📚 References" VỚI MÔ TẢ cho mỗi link từ PDF (nếu có links)
 
 ⚠️ QUY TẮC QUAN TRỌNG NHẤT:
 **GIỮ NGUYÊN TẤT CẢ NỘI DUNG GỐC** - KHÔNG được xóa, sửa đổi, hay viết lại bất kỳ phần nào.
 Đặc biệt: **PHẢI giữ nguyên tất cả timestamps** dạng [-SECONDSs-] (VD: [-930s-], [-1500s-]).
-CHỈ THÊM markers [-PAGE:X:"Mô tả"-] vào, KHÔNG thay đổi gì khác.
+CHỈ THÊM markers [-PAGE:X:"Mô tả"-] và References section vào, KHÔNG thay đổi gì khác.
 
 QUY TẮC MATCHING:
 
@@ -445,21 +464,27 @@ QUY TẮC MATCHING:
 
 2. **ƯU TIÊN slide tổng hợp** - Nếu có 1 slide chứa NHIỀU concept, dùng slide đó thay vì nhiều slide riêng lẻ.
 
-3. **TRÁNH slide trùng lặp** - Nếu nhiều slide có nội dung tương tự, chỉ chọn 1 slide ĐẦY ĐỦ NHẤT.
+3. **ƯU TIÊN slides có: Diagram, công thức, bảng so sánh, code demo, hình minh họa**
 
-4. **Chèn NGAY SAU keypoint liên quan**:
+4. **TRÁNH slide trùng lặp** - Nếu nhiều slide có nội dung tương tự, chỉ chọn 1 slide ĐẦY ĐỦ NHẤT.
+
+5. **Chèn NGAY SAU keypoint liên quan**:
    ❌ Sai: "- Keypoint A\\n- Keypoint B\\n[-PAGE:5-]"
    ✅ Đúng: "- Keypoint A [-PAGE:5:"Minh họa A"-]\\n- Keypoint B"
 
-5. **Thêm mô tả ngắn** trong marker:
+6. **Thêm mô tả ngắn** trong marker:
    Format: [-PAGE:X:"Mô tả nội dung slide"-]
    Ví dụ: [-PAGE:18:"Sơ đồ Mini-Batch Normalization và Scale-Shift"-]
 
-6. **Nếu nhiều keypoints dùng chung 1 slide** → chèn SAU keypoint cuối với mô tả đầy đủ
+7. **Nếu nhiều keypoints dùng chung 1 slide** → chèn SAU keypoint cuối với mô tả đầy đủ
 
-7. **Không có slide phù hợp hoặc slide không rõ ràng → KHÔNG chèn**
+8. **Không có slide phù hợp hoặc slide không rõ ràng → KHÔNG chèn**
 
-OUTPUT: Bản tóm tắt GIỮ NGUYÊN 100% nội dung gốc (kể cả timestamps), chỉ THÊM markers [-PAGE:X:"Mô tả"-] đúng vị trí.
+9. **REFERENCES (nếu có links từ PDF)**: THÊM section "## 📚 References" TRƯỚC Mục lục với:
+   - Mô tả chức năng của mỗi link dựa trên nội dung slide page tương ứng
+   - Format: **[Mô tả]**: <url>
+
+OUTPUT: Bản tóm tắt GIỮ NGUYÊN 100% nội dung gốc (kể cả timestamps), chỉ THÊM markers và References section.
 
 ---
 
