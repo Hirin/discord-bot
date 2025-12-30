@@ -382,7 +382,7 @@ PREVIEW_SLIDES_PROMPT = """Đây là tài liệu/slides cho một buổi học. 
 **Quy tắc quan trọng:**
 - **Tổng hợp theo chủ đề**: Gộp nội dung liên quan từ nhiều tài liệu, KHÔNG tách theo từng file
 - **Mỗi nội dung quan trọng PHẢI có ít nhất 1 slide minh họa**
-- **Slide marker:** `[-DOC{N}:PAGE:{X}-]` với N = số thứ tự tài liệu (1,2...), X = số trang
+- **Slide marker:** `[-DOC{{N}}:PAGE:{{X}}-]` với N = số thứ tự tài liệu (1,2...), X = số trang
 - Tổng cộng 10-15 slides quan trọng nhất
 - ƯU TIÊN slides có: Diagram, công thức, bảng so sánh, code demo, hình minh họa
 - **References**: Nếu có links, thêm section "📚 References" mô tả chức năng mỗi link

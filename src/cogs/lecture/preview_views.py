@@ -10,6 +10,7 @@ from dataclasses import dataclass
 
 from services import gemini, video_download, prompts
 from services import slides as slides_service
+from services import latex_utils
 
 logger = logging.getLogger(__name__)
 
@@ -334,6 +335,9 @@ class PreviewProcessor:
             # ==================================
             await self.update_status("⏳ Đang gửi kết quả...")
             
+            # Process LaTeX formulas before parsing
+            summary, latex_images = latex_utils.process_latex_formulas(summary)
+            
             # Parse multi-doc page markers
             parsed_parts = parse_multi_doc_pages(summary)
             
@@ -342,11 +346,12 @@ class PreviewProcessor:
             for i, doc in enumerate(self.documents, 1):
                 doc_images[i] = doc.images
             
-            # Send with embedded slides
+            # Send with embedded slides and LaTeX
             await send_chunked_with_multi_doc_pages(
                 self.interaction.channel,
                 parsed_parts,
                 doc_images,
+                latex_images=latex_images,
             )
             
             # ==================================
@@ -469,6 +474,7 @@ async def send_chunked_with_multi_doc_pages(
     channel: discord.TextChannel,
     parsed_parts: list[tuple[str, int | None, int | None]],
     doc_images: dict[int, list[str]],  # {doc_num: [image_paths]}
+    latex_images: list[tuple[str, str]] = None,  # [(placeholder, image_path)]
     chunk_size: int = 1900,
 ):
     """
@@ -478,9 +484,42 @@ async def send_chunked_with_multi_doc_pages(
         channel: Discord channel to send to
         parsed_parts: List of (text, doc_num, page_num) tuples from parse_multi_doc_pages
         doc_images: Dict mapping doc number to list of image paths
+        latex_images: List of (placeholder, image_path) for LaTeX formulas
         chunk_size: Max characters per message
     """
+    # Build LaTeX placeholder lookup
+    latex_lookup = {}
+    if latex_images:
+        for placeholder, img_path in latex_images:
+            latex_lookup[placeholder] = img_path
+    
     current_text = ""
+    
+    async def send_text_with_latex(text: str):
+        """Send text, handling embedded LaTeX placeholders"""
+        if not text.strip():
+            return
+        
+        # Check for LaTeX placeholders
+        remaining = text
+        for placeholder, img_path in latex_lookup.items():
+            if placeholder in remaining:
+                parts = remaining.split(placeholder, 1)
+                # Send text before placeholder
+                if parts[0].strip():
+                    await channel.send(parts[0].strip())
+                # Send LaTeX image
+                if os.path.exists(img_path):
+                    try:
+                        file = discord.File(img_path, filename="formula.png")
+                        await channel.send(file=file)
+                    except Exception as e:
+                        logger.warning(f"Failed to send LaTeX image: {e}")
+                remaining = parts[1] if len(parts) > 1 else ""
+        
+        # Send any remaining text
+        if remaining.strip():
+            await channel.send(remaining.strip())
     
     for text_chunk, doc_num, page_num in parsed_parts:
         # Add text to current buffer
@@ -488,7 +527,7 @@ async def send_chunked_with_multi_doc_pages(
         
         # If we have a page marker, send current text + image
         if doc_num is not None and page_num is not None:
-            # Send accumulated text first
+            # Send accumulated text first (with LaTeX handling)
             if current_text.strip():
                 # Split if too long
                 while len(current_text) > chunk_size:
@@ -496,11 +535,11 @@ async def send_chunked_with_multi_doc_pages(
                     if split_point == -1:
                         split_point = chunk_size
                     
-                    await channel.send(current_text[:split_point])
+                    await send_text_with_latex(current_text[:split_point])
                     current_text = current_text[split_point:].lstrip()
                 
                 if current_text.strip():
-                    await channel.send(current_text.strip())
+                    await send_text_with_latex(current_text.strip())
                 current_text = ""
             
             # Send image if available
@@ -514,15 +553,15 @@ async def send_chunked_with_multi_doc_pages(
                     except Exception as e:
                         logger.warning(f"Failed to send image doc{doc_num} page{page_num}: {e}")
     
-    # Send any remaining text
+    # Send any remaining text (with LaTeX handling)
     if current_text.strip():
         while len(current_text) > chunk_size:
             split_point = current_text.rfind('\n', 0, chunk_size)
             if split_point == -1:
                 split_point = chunk_size
             
-            await channel.send(current_text[:split_point])
+            await send_text_with_latex(current_text[:split_point])
             current_text = current_text[split_point:].lstrip()
         
         if current_text.strip():
-            await channel.send(current_text.strip())
+            await send_text_with_latex(current_text.strip())
