@@ -2,6 +2,8 @@
 
 Meeting summary bot với Fireflies.ai + GLM (Z.AI) và Lecture summarization với Gemini + AssemblyAI.
 
+**Multi-key Gemini support** - Mỗi user có thể set tối đa 5 API keys với auto-rotation khi rate limit.
+
 ## Features
 
 ### Meeting (`/meeting`)
@@ -53,11 +55,10 @@ Meeting summary bot với Fireflies.ai + GLM (Z.AI) và Lecture summarization v�
 
 | Action | Description |
 |--------|-------------|
-| 🎬 Video Mode | Tóm tắt từ video (Google Drive/Direct URL) với Gemini |
-| 📝 Transcript Mode | Tóm tắt từ Fireflies transcript (giống Meeting) |
-| 📄 Preview Mode | Tóm tắt nhiều PDF documents (1-5 files) |
-| 🔑 Config Gemini API | Set API key Gemini (per-user) |
-| 🎙️ Config AssemblyAI API | Set API key AssemblyAI (per-user) |
+| 🎬 Record Summary | Tóm tắt từ video (Google Drive/Direct URL) với Gemini |
+| 📄 Preview Slides | Tóm tắt nhiều PDF documents (1-5 files) |
+| 🔑 Gemini API | Quản lý multi-key (max 5) với auto-rotation |
+| 🎙️ AssemblyAI API | Set API key AssemblyAI (per-user) |
 
 ## AI Features
 
@@ -89,16 +90,20 @@ src/
 │   │   ├── cog.py             # Lecture cog + API config views
 │   │   ├── video_views.py     # Video processing + error views
 │   │   └── preview_views.py   # Multi-doc preview processing
+│   ├── shared/                # Shared UI components
+│   │   └── gemini_config_view.py  # Multi-key Gemini config UI
 │   └── system/                # System commands
-│       ├── config.py          # Config cog + nested button views
+│       ├── config.py          # Config cog + Global API keys
 │       └── help.py            # Help cog
 ├── services/
-│   ├── config.py              # Guild config + per-user API keys
+│   ├── config.py              # Guild config + multi-key personal API
+│   ├── gemini_keys.py         # Key pool + rotation + usage tracking
+│   ├── discord_logger.py      # 3-channel Discord logging
 │   ├── prompts.py             # Meeting/Lecture VLM/LLM prompts
 │   ├── fireflies.py           # Fireflies scraper
 │   ├── fireflies_api.py       # Fireflies GraphQL API
-│   ├── llm.py                 # GLM API (VLM + LLM with thinking)
-│   ├── gemini.py              # Gemini API (multimodal + thinking)
+│   ├── llm.py                 # GLM API (VLM + LLM, optional)
+│   ├── gemini.py              # Gemini API + personal key pool
 │   ├── video.py               # Video processing (split, frames)
 │   ├── video_download.py      # yt-dlp + Google Drive download
 │   ├── assemblyai_transcript.py  # AssemblyAI transcription
@@ -316,13 +321,14 @@ Required Discord permissions (integer: `274877975552`):
 |----------|----------|-------------|
 | `BOT_TOKEN` | ✅ | Discord bot token |
 | `GUILD_ID` | ❌ | Test server ID (faster sync) |
-| `GLM_API_KEY` | ❌* | Z.AI API key |
+| `GEMINI_API_KEY` | ❌ | Fallback Gemini key (users set own) |
+| `GLM_API_KEY` | ❌ | Z.AI API key (optional fallback) |
 | `GLM_BASE_URL` | ❌ | Z.AI API base URL |
 | `GLM_MODEL` | ❌ | LLM model (default: GLM-4.5-Flash) |
 | `GLM_VISION_MODEL` | ❌ | VLM model (default: GLM-4.6V-Flash) |
-| `FIREFLIES_API_KEY` | ❌* | Fireflies API key |
+| `FIREFLIES_API_KEY` | ❌ | Fireflies API key |
 
-> *Can be set per-guild via `/config`
+> GLM is optional - only used if `GLM_API_KEY` is configured
 
 ## Supported Platforms
 

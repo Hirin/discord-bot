@@ -108,9 +108,9 @@ class GeminiConfigView(discord.ui.View):
         )
         await interaction.response.edit_message(embed=embed, view=view)
     
-    @discord.ui.button(label="🧪 Test All", style=discord.ButtonStyle.secondary)
+    @discord.ui.button(label="🧪 Test All (tốn RPD)", style=discord.ButtonStyle.secondary)
     async def test_all_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        """Test all API keys."""
+        """Test all API keys. Warning: consumes RPD quota."""
         await interaction.response.defer(ephemeral=True)
         
         keys = config_service.get_user_gemini_apis(self.user_id)
@@ -118,10 +118,12 @@ class GeminiConfigView(discord.ui.View):
             await interaction.followup.send("❌ Không có API key nào!", ephemeral=True)
             return
         
+        pool = GeminiKeyPool(self.user_id, keys)
         results = []
         for i, key in enumerate(keys):
             try:
                 await gemini_service.test_api(key)
+                pool.increment_count(key)  # Count as request
                 results.append(f"✅ Key #{i+1}: OK")
             except Exception as e:
                 error_msg = str(e)[:50]
