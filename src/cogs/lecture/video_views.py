@@ -998,9 +998,27 @@ class VideoLectureProcessor:
                         # Check for rate limit (429)
                         if "429" in error_str or "rate" in error_str or "quota" in error_str:
                             if gemini_key_pool and current_key:
+                                from_key_idx = user_gemini_keys.index(current_key) + 1 if current_key in user_gemini_keys else 0
                                 gemini_key_pool.mark_rate_limited(current_key)
+                                next_key = gemini_key_pool.get_available_key()
+                                to_key_idx = user_gemini_keys.index(next_key) + 1 if next_key and next_key in user_gemini_keys else 0
+                                
                                 logger.warning(f"Key rate limited, rotating... (attempt {key_attempt + 1}/{max_key_retries})")
                                 await self.update_status("⚠️ API key bị rate limit, đang đổi key khác...")
+                                
+                                # Log to Discord
+                                try:
+                                    from services import discord_logger
+                                    await discord_logger.log_rate_limit(
+                                        bot=self.interaction.client,
+                                        guild=self.interaction.guild,
+                                        user=self.interaction.user,
+                                        from_key=from_key_idx,
+                                        to_key=to_key_idx,
+                                    )
+                                except Exception:
+                                    pass
+                                
                                 continue  # Try next key
                             else:
                                 raise  # No pool, can't rotate

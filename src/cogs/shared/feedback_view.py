@@ -36,9 +36,9 @@ class FeedbackView(discord.ui.View):
 
     @discord.ui.button(label="Hài lòng (Giữ kết quả)", style=discord.ButtonStyle.green, emoji="✅")
     async def satisfied(self, interaction: discord.Interaction, button: discord.ui.Button):
-        from services import feedback_log
+        from services import feedback_log, discord_logger
         
-        # Log satisfied feedback
+        # Log satisfied feedback to local file
         feedback_log.log_feedback(
             guild_id=interaction.guild_id,
             user_id=interaction.user.id,
@@ -47,6 +47,19 @@ class FeedbackView(discord.ui.View):
             satisfied=True,
             reason=None
         )
+        
+        # Log to Discord channel
+        try:
+            await discord_logger.log_feedback(
+                bot=interaction.client,
+                guild=interaction.guild,
+                user=interaction.user,
+                feature=self.feature,
+                satisfied=True,
+            )
+        except Exception as e:
+            logger.warning(f"Failed to log feedback to Discord: {e}")
+        
         logger.info(f"FEEDBACK_SATISFIED: feature={self.feature} user={interaction.user.id}")
         
         # Delete the feedback message to keep channel clean
@@ -96,11 +109,11 @@ class FeedbackReviewModal(discord.ui.Modal, title="Lý do xóa kết quả"):
         self.feedback_message = feedback_message
     
     async def on_submit(self, interaction: discord.Interaction):
-        from services import feedback_log
+        from services import feedback_log, discord_logger
         
         reason_text = self.reason.value.strip()
         
-        # Log unsatisfied feedback with reason
+        # Log unsatisfied feedback with reason to local file
         feedback_log.log_feedback(
             guild_id=interaction.guild_id,
             user_id=interaction.user.id,
@@ -109,6 +122,20 @@ class FeedbackReviewModal(discord.ui.Modal, title="Lý do xóa kết quả"):
             satisfied=False,
             reason=reason_text
         )
+        
+        # Log to Discord channel
+        try:
+            await discord_logger.log_feedback(
+                bot=interaction.client,
+                guild=interaction.guild,
+                user=interaction.user,
+                feature=self.feature,
+                satisfied=False,
+                reason=reason_text,
+            )
+        except Exception as e:
+            logger.warning(f"Failed to log feedback to Discord: {e}")
+        
         logger.info(f"FEEDBACK_DELETE: feature={self.feature} user={interaction.user.id} reason={reason_text[:50]}...")
         
         # Acknowledge and delete

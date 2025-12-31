@@ -221,7 +221,7 @@ async def summarize_transcript(
     client = get_client(guild_id)
     if not client:
         # No GLM configured - return error
-        if user_gemini_key:
+        if user_gemini_keys:
             return "⚠️ Gemini API failed and GLM not configured as fallback"
         else:
             return "⚠️ No API keys configured. Please set Gemini API key or configure GLM."
