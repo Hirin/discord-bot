@@ -52,46 +52,120 @@ async def extract_slide_content(
     timeout: int = 120,
     retries: int = 3,
     mode: str = "meeting",
+    pdf_path: Optional[str] = None,
+    user_id: Optional[int] = None,
 ) -> Optional[str]:
     """
-    Extract comprehensive content from slides (not just glossary).
+    Extract comprehensive content from slides.
     
-    With 128k token budget, we can extract FULL slide content including:
-    - Definitions, formulas, code blocks
-    - Diagrams and visual explanations
-    - Examples and use cases
-    - All relevant information for context injection
+    Priority:
+    1. Gemini (if user has personal keys or global key available) - uses PDF directly
+    2. GLM VLM fallback (if Gemini not available) - uses converted images
 
     Args:
-        image_base64_list: List of base64 encoded PNG images
+        image_base64_list: List of base64 encoded PNG images (for GLM fallback)
         guild_id: Guild ID for guild-specific API key
         timeout: Timeout in seconds
         retries: Number of retry attempts
         mode: "meeting" or "lecture" - determines extraction focus
+        pdf_path: Path to PDF file (for Gemini direct upload)
+        user_id: User ID for personal Gemini keys
 
     Returns:
-        Extracted slide content or None if failed
+        Extracted slide content or error message if failed
     """
-    if not image_base64_list:
-        return None
+    from services.gemini_keys import GeminiKeyPool
     
-    # Check if GLM is available
+    vlm_prompt = config_service.get_prompt(guild_id, mode=mode, prompt_type="vlm")
+    
+    # === Try Gemini first (priority) ===
+    user_gemini_keys = []
+    if user_id:
+        user_gemini_keys = config_service.get_user_gemini_apis(user_id) or []
+    
+    # Also check for global Gemini key
+    global_gemini_key = config_service.get_guild_gemini_api(guild_id) if guild_id else None
+    
+    has_gemini = bool(user_gemini_keys) or bool(global_gemini_key)
+    
+    if has_gemini and pdf_path:
+        logger.info(f"Trying Gemini for slide extraction ({mode} mode)...")
+        
+        # Build key pool
+        if user_gemini_keys:
+            gemini_key_pool = GeminiKeyPool(user_gemini_keys)
+        else:
+            gemini_key_pool = GeminiKeyPool([global_gemini_key]) if global_gemini_key else None
+        
+        if gemini_key_pool:
+            max_key_retries = len(user_gemini_keys) if user_gemini_keys else 1
+            
+            for key_attempt in range(max_key_retries):
+                current_key = gemini_key_pool.get_available_key()
+                if not current_key:
+                    break
+                
+                try:
+                    from services import gemini
+                    from google.genai import types
+                    
+                    client = gemini.get_client(current_key)
+                    
+                    def _upload_and_extract():
+                        uploaded = None
+                        try:
+                            uploaded = client.files.upload(file=pdf_path)
+                            logger.info(f"Uploaded PDF to Gemini: {uploaded.name}")
+                            
+                            import time
+                            start = time.time()
+                            response = client.models.generate_content(
+                                model="gemini-3-flash-preview",
+                                contents=[uploaded, vlm_prompt],
+                                config=types.GenerateContentConfig(
+                                    thinking_config=types.ThinkingConfig(thinking_level="medium")
+                                ),
+                            )
+                            logger.info(f"Gemini extracted in {time.time()-start:.1f}s")
+                            return response.text
+                        finally:
+                            if uploaded:
+                                try:
+                                    client.files.delete(name=uploaded.name)
+                                except Exception:
+                                    pass
+                    
+                    loop = asyncio.get_event_loop()
+                    result = await loop.run_in_executor(None, _upload_and_extract)
+                    
+                    if gemini_key_pool:
+                        gemini_key_pool.increment_count(current_key)
+                    
+                    logger.info(f"Gemini slide extraction success ({mode} mode): {len(result)} chars")
+                    return result
+                    
+                except Exception as e:
+                    error_str = str(e).lower()
+                    logger.warning(f"Gemini extraction failed (key attempt {key_attempt + 1}): {e}")
+                    
+                    if "429" in error_str or "rate" in error_str or "quota" in error_str:
+                        if gemini_key_pool:
+                            gemini_key_pool.mark_rate_limited(current_key)
+                        continue  # Try next key
+                    else:
+                        break  # Non-rate-limit error, try GLM
+    
+    # === Fallback to GLM VLM ===
+    if not image_base64_list:
+        return "⚠️ No slides to extract (no images and Gemini unavailable)"
+    
     client = get_client(guild_id)
     if not client:
-        logger.warning("GLM not configured, skipping slide extraction")
-        return None
-    
-    from services import config as config_service
+        return "⚠️ VLM Error: No API keys configured (Gemini or GLM)"
     
     model = os.getenv("GLM_VISION_MODEL", "glm-4.6v-flash")
+    logger.info(f"Falling back to GLM VLM for slide extraction ({mode} mode)...")
     
-    # Get VLM prompt from config (allows per-guild customization)
-    vlm_prompt = config_service.get_prompt(
-        guild_id, 
-        mode=mode, 
-        prompt_type="vlm"
-    )
-
     # Build content with images
     content = []
     for img_b64 in image_base64_list:
@@ -99,10 +173,9 @@ async def extract_slide_content(
             "type": "image_url",
             "image_url": {"url": f"data:image/png;base64,{img_b64}"},
         })
-    
-    # Append prompt at the end
     content.append({"type": "text", "text": vlm_prompt})
 
+    last_error = ""
     for attempt in range(retries):
         try:
             logger.info(f"Extracting slide content ({mode} mode) from {len(image_base64_list)} pages (attempt {attempt + 1})...")
@@ -119,18 +192,17 @@ async def extract_slide_content(
             )
 
             slide_content = completion.choices[0].message.content
-            logger.info(f"Slide content extracted ({mode} mode): {len(slide_content)} chars")
+            logger.info(f"GLM slide content extracted ({mode} mode): {len(slide_content)} chars")
             return slide_content
 
         except Exception as e:
             last_error = str(e)
-            logger.error(f"Vision attempt {attempt + 1} failed: {e}")
+            logger.error(f"GLM Vision attempt {attempt + 1} failed: {e}")
             if attempt < retries - 1:
-                backoff = 5 * (attempt + 1)  # 5s, 10s, 15s
+                backoff = 5 * (attempt + 1)
                 logger.info(f"Retrying in {backoff}s...")
                 await asyncio.sleep(backoff)
 
-    # Return error message instead of None
     return f"⚠️ VLM Error: {last_error[:200]}"
 
 
@@ -139,6 +211,7 @@ async def summarize_transcript(
     guild_id: Optional[int] = None,
     user_id: Optional[int] = None,
     slide_content: Optional[str] = None,
+    glossary: Optional[str] = None,
     timeout: int = 60,
     retries: int = 3,
     mode: str = "meeting",
@@ -154,6 +227,7 @@ async def summarize_transcript(
         user_id: User ID for per-user Gemini API key
         slide_content: Full extracted content from slides (comprehensive extraction)
                       Thanks to 128k token budget, we can include everything relevant
+        glossary: Optional glossary/terminology context for domain-specific terms
         timeout: Timeout in seconds
         retries: Number of retry attempts
         mode: "meeting" or "lecture" - determines summarization style
@@ -169,6 +243,10 @@ async def summarize_transcript(
         mode=mode,
         prompt_type="summary"
     )
+    
+    # Append glossary context if provided
+    if glossary:
+        system_prompt += f"\n\n## Thuật ngữ chuyên ngành (Glossary):\n{glossary}"
     
     # ========================================
     # TRY GEMINI FIRST (if user has API keys)

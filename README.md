@@ -1,14 +1,16 @@
 # Discord Bot
 
-Meeting summary bot với Fireflies.ai + GLM (Z.AI) và Lecture summarization với Gemini + AssemblyAI.
+Meeting summary bot với Fireflies.ai + AssemblyAI transcription + Gemini/GLM summarization.
+Lecture summarization với Gemini + AssemblyAI.
 
 **Multi-key Gemini support** - Mỗi user có thể set tối đa 5 API keys với auto-rotation khi rate limit.
 
 ## Features
 
 ### Meeting (`/meeting`)
-- 🎙️ **Join Meeting** - Bot tham gia và record Google Meet/Zoom
+- 🎙️ **Join Meeting** - Bot tham gia và record Google Meet/Zoom (via Fireflies)
 - 📝 **Meeting Summarize** - Tóm tắt transcript với **Gemini** (priority) hoặc GLM (fallback)
+- 🔊 **AssemblyAI Transcript** - Scrape audio từ Fireflies → transcribe với AssemblyAI (free $50)
 - 🧠 **Gemini Multimodal** - Xử lý slides PDF + transcript trong 1 call (khi có Gemini API key)
 - 📎 **Document Upload** - Upload PDF slides, tích hợp trực tiếp vào Gemini (max 200 trang)
 - 📚 **Auto References** - Extract links từ PDF slides, model mô tả chức năng
@@ -100,8 +102,9 @@ src/
 │   ├── gemini_keys.py         # Key pool + rotation + usage tracking
 │   ├── discord_logger.py      # 3-channel Discord logging
 │   ├── prompts.py             # Meeting/Lecture VLM/LLM prompts
-│   ├── fireflies.py           # Fireflies scraper
-│   ├── fireflies_api.py       # Fireflies GraphQL API
+│   ├── fireflies.py           # Fireflies transcript formatter
+│   ├── fireflies_api.py       # Fireflies GraphQL API (detect new transcripts, join meeting)
+│   ├── fireflies_scraper.py   # Scrape audio from Fireflies page + AssemblyAI transcribe
 │   ├── llm.py                 # GLM API (VLM + LLM, optional)
 │   ├── gemini.py              # Gemini API + personal key pool
 │   ├── video.py               # Video processing (split, frames)

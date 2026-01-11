@@ -1255,10 +1255,12 @@ class VideoLectureProcessor:
                     # Send to channel directly (interaction token expires after 15 min,
                     # but lecture processing takes 25-30 min)
                     user = self.interaction.user
-                    await self.interaction.channel.send(
+                    feedback_msg = await self.interaction.channel.send(
                         f"{user.mention} **Bạn có hài lòng với kết quả này?**", 
                         view=view,
                     )
+                    # Store message reference for auto-delete on timeout
+                    view._message = feedback_msg
                 except Exception as e:
                     logger.warning(f"Failed to send feedback view: {e}")
             
@@ -1289,8 +1291,32 @@ class VideoLectureProcessor:
             
             await self.update_status("✅ Hoàn thành! Summary đã được gửi lên channel.")
             
+            # Log success to tracking channel
+            from services import discord_logger
+            await discord_logger.log_process(
+                bot=self.interaction.client,
+                guild=self.interaction.guild,
+                user=self.interaction.user,
+                process="Lecture Summary",
+                status="Success",
+                success=True,
+                video_url=self.youtube_url,
+            )
+            
         except Exception as e:
             logger.exception("Error in video lecture processing")
+            
+            # Log error to tracking channel
+            from services import discord_logger
+            await discord_logger.log_process(
+                bot=self.interaction.client,
+                guild=self.interaction.guild,
+                user=self.interaction.user,
+                process="Lecture Summary",
+                status=str(e)[:200],
+                success=False,
+                video_url=self.youtube_url,
+            )
             
             # Show error with retry buttons
             error_view = VideoErrorView(self)

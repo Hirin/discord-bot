@@ -190,11 +190,12 @@ class MeetingIdModal(discord.ui.Modal, title="Meeting Summary"):
                 if result:
                     scraped_title, transcript_data = result
             else:
-                # ID: Try Fireflies API FIRST, then fallback to local backup
+                # ID: Try scraping Fireflies + AssemblyAI first, then fallback to local backup
                 fireflies_id = id_or_url
                 
-                # 1. Try Fireflies API first
-                transcript_data = await fireflies_api.get_transcript_by_id(
+                # 1. Try scraping Fireflies audio + transcribe with AssemblyAI
+                from services import fireflies_scraper
+                transcript_data = await fireflies_scraper.get_meeting_transcript(
                     id_or_url, guild_id=self.guild_id
                 )
                 
@@ -419,10 +420,12 @@ class MeetingIdModal(discord.ui.Modal, title="Meeting Summary"):
                             title=title,
                             feature="meeting"
                         )
-                        await interaction.channel.send(
+                        feedback_msg = await interaction.channel.send(
                             f"{interaction.user.mention} **Bạn có hài lòng với kết quả này?**",
                             view=view,
                         )
+                        # Store message reference for auto-delete on timeout
+                        view._message = feedback_msg
                     except Exception as e:
                         logger.warning(f"Failed to send feedback view: {e}")
             else:
@@ -672,8 +675,9 @@ class SaveDeleteModal(discord.ui.Modal, title="Save & Delete from Fireflies"):
 
         ff_id = self.fireflies_id.value.strip()
 
-        # Get transcript from Fireflies
-        transcript_data = await fireflies_api.get_transcript_by_id(
+        # Get transcript via scraping Fireflies + AssemblyAI
+        from services import fireflies_scraper
+        transcript_data = await fireflies_scraper.get_meeting_transcript(
             ff_id, guild_id=self.guild_id
         )
 

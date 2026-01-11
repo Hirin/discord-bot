@@ -427,16 +427,40 @@ class PreviewProcessor:
                         feature="preview"
                     )
                     user = self.interaction.user
-                    await self.interaction.channel.send(
+                    feedback_msg = await self.interaction.channel.send(
                         f"{user.mention} **Bạn có hài lòng với kết quả này?**",
                         view=view,
                     )
+                    # Store message reference for auto-delete on timeout
+                    view._message = feedback_msg
                 except Exception as e:
                     logger.warning(f"Failed to send feedback view: {e}")
+            
+            # Log success to tracking channel
+            from services import discord_logger
+            await discord_logger.log_process(
+                bot=self.interaction.client,
+                guild=self.interaction.guild,
+                user=self.interaction.user,
+                process="Preview Slides",
+                status="Success",
+                success=True,
+            )
             
         except Exception as e:
             logger.exception("Preview processing failed")
             error_msg = str(e)[:200]
+            
+            # Log error to tracking channel
+            from services import discord_logger
+            await discord_logger.log_process(
+                bot=self.interaction.client,
+                guild=self.interaction.guild,
+                user=self.interaction.user,
+                process="Preview Slides",
+                status=error_msg,
+                success=False,
+            )
             
             # Show retry view
             view = PreviewErrorView(self)

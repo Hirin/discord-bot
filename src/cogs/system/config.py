@@ -146,6 +146,23 @@ class ApiKeySelectionView(discord.ui.View):
             view=view
         )
 
+    @discord.ui.button(label="🎙️ AssemblyAI (Global)", style=discord.ButtonStyle.success)
+    async def assemblyai_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Set Global AssemblyAI API for meeting transcription"""
+        current_key = config_service.get_global_assemblyai_api(self.guild_id)
+        if current_key:
+            status = f"✅ Đã set: `{config_service.mask_key(current_key)}`"
+        else:
+            status = "❌ Chưa set"
+        
+        view = GlobalAssemblyAIApiView(self.guild_id)
+        await interaction.response.edit_message(
+            content=f"🎙️ **Global AssemblyAI API**\n\n"
+                    f"Status: {status}\n\n"
+                    f"_Dùng cho: Meeting transcript (from Fireflies audio)_",
+            view=view
+        )
+
     @discord.ui.button(label="🔑 GLM API", style=discord.ButtonStyle.primary)
     async def glm_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(ApiModal(self.guild_id, "glm"))
@@ -204,6 +221,59 @@ class GlobalGeminiApiModal(discord.ui.Modal, title="Set Global Gemini API"):
         await interaction.response.send_message(
             f"✅ Global Gemini API Key đã lưu: `{config_service.mask_key(key)}`\n"
             f"_Dùng cho auto-join meeting, scheduled summary_",
+            ephemeral=True
+        )
+
+
+class GlobalAssemblyAIApiView(discord.ui.View):
+    """View for managing Global AssemblyAI API key"""
+    
+    def __init__(self, guild_id: int):
+        super().__init__(timeout=60)
+        self.guild_id = guild_id
+    
+    @discord.ui.button(label="⚙️ Set API", style=discord.ButtonStyle.primary)
+    async def set_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        modal = GlobalAssemblyAIApiModal(self.guild_id)
+        await interaction.response.send_modal(modal)
+    
+    @discord.ui.button(label="🗑️ Xóa API", style=discord.ButtonStyle.danger)
+    async def delete_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        config_service.set_global_assemblyai_api(self.guild_id, "")
+        await interaction.response.send_message(
+            "✅ Đã xóa Global AssemblyAI API key",
+            ephemeral=True
+        )
+    
+    @discord.ui.button(label="⬅️ Quay lại", style=discord.ButtonStyle.secondary)
+    async def back_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = ApiKeySelectionView(self.guild_id)
+        await interaction.response.edit_message(
+            content="🔑 **Chọn API key để cấu hình:**",
+            view=view
+        )
+
+
+class GlobalAssemblyAIApiModal(discord.ui.Modal, title="Set Global AssemblyAI API"):
+    """Modal for entering Global AssemblyAI API key"""
+    
+    api_key = discord.ui.TextInput(
+        label="AssemblyAI API Key",
+        placeholder="Get from assemblyai.com",
+        required=True,
+    )
+    
+    def __init__(self, guild_id: int):
+        super().__init__()
+        self.guild_id = guild_id
+    
+    async def on_submit(self, interaction: discord.Interaction):
+        key = self.api_key.value.strip()
+        config_service.set_global_assemblyai_api(self.guild_id, key)
+        
+        await interaction.response.send_message(
+            f"✅ Global AssemblyAI API Key đã lưu: `{config_service.mask_key(key)}`\n"
+            f"_Dùng cho meeting transcript (free $50 credit)_",
             ephemeral=True
         )
 

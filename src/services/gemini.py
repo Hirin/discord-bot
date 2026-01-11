@@ -120,15 +120,30 @@ def _call_gemini_sync(
     from google.genai import types
     
     start = time.time()
-    response = client.models.generate_content(
-        model=model,
-        contents=contents,
-        config=types.GenerateContentConfig(
-            thinking_config=types.ThinkingConfig(thinking_level=thinking_level)
-        ),
-    )
-    logger.info(f"Gemini call completed in {time.time()-start:.1f}s, {len(response.text)} chars")
-    return response.text
+    
+    # Retry once if empty response
+    for attempt in range(2):
+        response = client.models.generate_content(
+            model=model,
+            contents=contents,
+            config=types.GenerateContentConfig(
+                thinking_config=types.ThinkingConfig(thinking_level=thinking_level)
+            ),
+        )
+        
+        # Handle None/empty response (can happen when blocked or error)
+        text = response.text if response.text else ""
+        if text:
+            logger.info(f"Gemini call completed in {time.time()-start:.1f}s, {len(text)} chars")
+            return text
+        
+        # Empty response - retry once
+        if attempt == 0:
+            logger.warning(f"Gemini returned empty response after {time.time()-start:.1f}s, retrying in 5s...")
+            time.sleep(5)
+        else:
+            logger.error(f"Gemini returned empty response after retry ({time.time()-start:.1f}s)")
+            raise Exception("Gemini returned empty response after retry (may be blocked or quota exceeded)")
 
 
 async def _call_gemini(

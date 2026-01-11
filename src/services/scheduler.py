@@ -302,8 +302,10 @@ async def run_scheduler(bot):
                             found_new = True
                             logger.info(f"Found new transcript: {t_id}")
 
-                            # Get full transcript
-                            transcript_data = await fireflies_api.get_transcript_by_id(
+                            # Get full transcript via scraping + AssemblyAI
+                            # (replaces fireflies_api.get_transcript_by_id which needs paid plan)
+                            from services import fireflies_scraper
+                            transcript_data = await fireflies_scraper.get_meeting_transcript(
                                 t_id, guild_id=guild_id
                             )
 

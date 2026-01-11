@@ -107,6 +107,31 @@ def set_guild_gemini_api(guild_id: int, api_key: str):
     logger.info(f"Global Gemini API key set for guild {guild_id}")
 
 
+def get_global_assemblyai_api(guild_id: int) -> Optional[str]:
+    """
+    Get Global AssemblyAI API key for meeting transcription.
+    Used for: meeting transcript (after scraping audio from Fireflies).
+    """
+    import os
+    
+    config = get_guild_config(guild_id)
+    guild_key = config.get("assemblyai_api_key")
+    if guild_key:
+        return guild_key
+    
+    # Fallback to environment variable
+    return os.getenv("ASSEMBLYAI_API_KEY")
+
+
+def set_global_assemblyai_api(guild_id: int, api_key: str):
+    """
+    Set Global AssemblyAI API key for meeting transcription.
+    Admin only.
+    """
+    set_guild_config(guild_id, "assemblyai_api_key", api_key)
+    logger.info(f"Global AssemblyAI API key set for guild {guild_id}")
+
+
 def mask_key(key: str) -> str:
     """Mask API key for display"""
     if not key or len(key) < 8:

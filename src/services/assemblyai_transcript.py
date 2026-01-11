@@ -100,6 +100,9 @@ async def upload_file(file_path: str, api_key: str) -> str:
         
     Returns:
         Upload URL for transcription
+        
+    Raises:
+        QuotaExhaustedError: When $50 free credit is exhausted
     """
     logger.info(f"Uploading file to AssemblyAI: {file_path}")
     
@@ -112,11 +115,17 @@ async def upload_file(file_path: str, api_key: str) -> str:
                 headers=headers,
                 data=f
             ) as resp:
+                text = await resp.text()
+                
+                # Check for quota/balance errors
+                if resp.status == 402 or "insufficient" in text.lower() or "balance" in text.lower():
+                    raise Exception("⚠️ AssemblyAI free credit exhausted ($50/50). Please add billing or use a new API key.")
+                
                 if resp.status != 200:
-                    text = await resp.text()
                     raise Exception(f"AssemblyAI upload failed: {resp.status} - {text}")
                 
-                result = await resp.json()
+                import json
+                result = json.loads(text)
                 upload_url = result.get("upload_url")
                 
                 if not upload_url:
@@ -141,6 +150,9 @@ async def start_transcription(
         
     Returns:
         Transcript ID
+        
+    Raises:
+        Exception with clear message when quota exhausted
     """
     logger.info("Starting AssemblyAI transcription")
     
@@ -160,11 +172,17 @@ async def start_transcription(
             headers=headers,
             json=data
         ) as resp:
+            text = await resp.text()
+            
+            # Check for quota/balance errors
+            if resp.status == 402 or "insufficient" in text.lower() or "balance" in text.lower():
+                raise Exception("⚠️ AssemblyAI free credit exhausted ($50/50). Please add billing or use a new API key.")
+            
             if resp.status != 200:
-                text = await resp.text()
                 raise Exception(f"AssemblyAI transcription start failed: {resp.status} - {text}")
             
-            result = await resp.json()
+            import json
+            result = json.loads(text)
             transcript_id = result.get("id")
             
             if not transcript_id:

@@ -34,6 +34,17 @@ class FeedbackView(discord.ui.View):
             return False
         return True
 
+    async def on_timeout(self):
+        """Auto-delete feedback message when timeout (no interaction)."""
+        # View already stores reference to message via channel.get_message
+        # We need to store the message reference when view is attached
+        if hasattr(self, '_message') and self._message:
+            try:
+                await self._message.delete()
+                logger.info(f"Auto-deleted feedback message after timeout (feature={self.feature})")
+            except Exception as e:
+                logger.warning(f"Failed to auto-delete feedback message: {e}")
+
     @discord.ui.button(label="Hài lòng (Giữ kết quả)", style=discord.ButtonStyle.green, emoji="✅")
     async def satisfied(self, interaction: discord.Interaction, button: discord.ui.Button):
         from services import feedback_log, discord_logger

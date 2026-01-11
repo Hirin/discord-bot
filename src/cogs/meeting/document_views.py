@@ -161,12 +161,18 @@ async def prompt_for_document(
 
         # Update status for VLM extraction
         try:
-            await status_msg.edit(content="⏳ Đang trích xuất nội dung slides (2-5 phút)...")
+            await status_msg.edit(content="⏳ Đang trích xuất nội dung slides (Gemini/GLM)...")
         except Exception:
             pass
 
-        # Extract slide content using Vision model
-        slide_content = await llm.extract_slide_content(images, guild_id, mode=mode)
+        # Extract slide content using Gemini (priority) or GLM (fallback)
+        slide_content = await llm.extract_slide_content(
+            images, 
+            guild_id, 
+            mode=mode, 
+            pdf_path=pdf_path,
+            user_id=interaction.user.id
+        )
 
         # Check for VLM error
         if slide_content and slide_content.startswith("⚠️ VLM"):
