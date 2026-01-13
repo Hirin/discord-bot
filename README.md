@@ -293,6 +293,42 @@ flowchart TD
     end
 ```
 
+## Preview Slides Pipeline
+
+```mermaid
+flowchart TD
+    subgraph User Input
+        A["/lecture → Preview"] --> B["📄 Preview Slides Mode"]
+        B --> C["Upload PDF files (1-5)"]
+        C --> D["Confirm documents"]
+    end
+
+    subgraph Stage 1 - Document Processing
+        D --> E["🔀 Parallel Download"]
+        E --> F1["📥 Download PDF 1"]
+        E --> F2["📥 Download PDF 2"]
+        E --> FN["📥 Download PDF N"]
+        F1 & F2 & FN --> G["Convert PDFs to images"]
+        G --> H["Extract links from PDFs"]
+    end
+
+    subgraph Stage 2 - Gemini Summary
+        H --> I{{"User has Gemini keys?"}}
+        I -->|"Yes"| J["🔑 GeminiKeyPool"]
+        I -->|"No"| K["❌ Error: No API key"]
+        J --> L["Call Gemini with all PDFs"]
+        L --> M["Generate multi-doc summary"]
+    end
+
+    subgraph Stage 3 - Output
+        M --> N["Parse output markers"]
+        N --> O["[-DOC{N}:PAGE:{X}-] → Embed images"]
+        O --> P["Send chunked messages"]
+        P --> Q["📊 FeedbackView"]
+        Q --> R["✅ Done"]
+    end
+```
+
 ## Setup
 
 ```bash
