@@ -34,6 +34,18 @@ AI-powered Discord bot that streamlines group meetings and enhances the learning
 | **Multi-stage Cache** | Cache videos, transcripts, slides, and partial summaries |
 | **Preview Mode** | Summarize multiple PDFs (1-5 files) before class |
 
+### ❓ Ask Module (`!ask`)
+| Feature | Description |
+|---------|-------------|
+| **Context-Aware Q&A** | Answer questions using lecture slides + summary + chat history |
+| **Persistent Context** | Store preview/summary message IDs → never lose context |
+| **Interleaved Output** | Text → Image → Text flow like Preview Slides |
+| **Slide References** | `[-PAGE:X-]` markers render actual slide images |
+| **Google Image Search** | `[-Google Search: "keyword"-]` with Gemini 2.5 Flash validation |
+| **Image Validation** | Download 10 images → Gemini picks best match → skip if none relevant |
+| **LaTeX Rendering** | `$$ formula $$` rendered as images |
+| **Retry Mechanism** | Retry button with 3-minute timeout |
+
 ## Commands
 
 | Command | Description |
@@ -42,6 +54,7 @@ AI-powered Discord bot that streamlines group meetings and enhances the learning
 | `/config` | Configure API keys, prompts, channels, and limits |
 | `/meeting` | Meeting actions menu |
 | `/lecture` | Lecture actions: Video/Transcript mode, Preview, API config |
+| `!ask [question]` | Ask questions about current lecture context |
 
 ### Meeting Actions
 - 📋 **List from Fireflies** - View transcripts on Fireflies (with 🛡️ whitelist badge)
@@ -88,6 +101,8 @@ src/
 │   │   ├── cog.py             # Lecture cog + API config views
 │   │   ├── video_views.py     # Video processing + error views
 │   │   └── preview_views.py   # Multi-doc preview processing
+│   ├── ask/                   # Q&A commands
+│   │   └── cog.py             # Ask cog + interleaved output
 │   ├── shared/                # Shared UI components
 │   │   └── gemini_config_view.py  # Multi-key Gemini config UI
 │   └── system/                # System commands
@@ -97,12 +112,14 @@ src/
 │   ├── config.py              # Guild config + multi-key personal API
 │   ├── gemini_keys.py         # Key pool + rotation + usage tracking
 │   ├── discord_logger.py      # 3-channel Discord logging
-│   ├── prompts.py             # Meeting/Lecture VLM/LLM prompts
+│   ├── prompts.py             # Meeting/Lecture/Ask VLM/LLM prompts
+│   ├── lecture_context_storage.py  # Persistent context per thread
+│   ├── image_search.py        # Google Image search + validation
 │   ├── fireflies.py           # Fireflies transcript formatter
 │   ├── fireflies_api.py       # Fireflies GraphQL API
 │   ├── fireflies_scraper.py   # Scrape audio from Fireflies + AssemblyAI
 │   ├── llm.py                 # GLM API (VLM + LLM, optional)
-│   ├── gemini.py              # Gemini API + personal key pool
+│   ├── gemini.py              # Gemini API + image validation
 │   ├── video.py               # Video processing (split, frames)
 │   ├── video_download.py      # yt-dlp + Google Drive download
 │   ├── assemblyai_transcript.py  # AssemblyAI transcription
@@ -250,6 +267,50 @@ flowchart TD
         K --> L["Send with embedded images"]
         L --> M["📊 FeedbackView"]
         M --> N["✅ Done"]
+    end
+```
+
+### Ask Q&A Pipeline
+
+```mermaid
+flowchart TD
+    subgraph Input
+        A["!ask Question"] --> B["Optional Image"]
+    end
+
+    subgraph Context
+        B --> C{JSON Cache?}
+        C -->|Yes| D["Fetch by Message ID"]
+        C -->|No| E["Scan 200 Messages"]
+        D --> F["+ 100 Recent Chat"]
+        E --> G["Extract Slide URL"]
+    end
+
+    subgraph LLM
+        F --> H["🧠 Gemini 3 Flash<br/>with Thinking"]
+        G --> H
+    end
+
+    subgraph Markers
+        H --> I["Parse Response"]
+        I --> J["PAGE:X"]
+        I --> K["Google Search"]
+        I --> L["LaTeX Formula"]
+    end
+
+    subgraph ImageValidation
+        K --> M["Download 10 Images"]
+        M --> N["🔍 Gemini 2.5 Flash<br/>Pick Best Match"]
+        N -->|Relevant| O["Add Description"]
+        N -->|None| P["Skip Image"]
+    end
+
+    subgraph Output
+        J --> Q["📄 Slide Image"]
+        O --> R["🔍 Search Image"]
+        L --> S["📐 Formula Image"]
+        Q & R & S --> T["Interleaved Output"]
+        T --> U["🔄 Retry View"]
     end
 ```
 
