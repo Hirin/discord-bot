@@ -155,8 +155,16 @@ class AskCog(commands.Cog):
         # Process
         await self._process_ask(source, question, question_image, context)
     
-    async def _get_context(self, channel, limit: int = 200) -> AskContext:
-        """Retrieve context from channel history"""
+    async def _get_context(self, channel, limit: int = 100) -> AskContext:
+        """
+        Retrieve context from channel history.
+        Priority: stored lecture context (summary/preview) > recent chat history
+        
+        If no stored context: fallback to 200 messages for full context
+        Slide URL priority: summary > preview > scan history
+        """
+        from services import lecture_context_storage
+        
         context = AskContext(
             bot_text=[],
             user_messages=[],
@@ -165,18 +173,86 @@ class AskCog(commands.Cog):
             pdf_attachment=None,
         )
         
-        async for msg in channel.history(limit=limit):
+        thread_id = channel.id
+        stored_context = lecture_context_storage.get_lecture_context(thread_id)
+        
+        # Track message ID ranges to exclude from chat history
+        exclude_ranges = []  # List of (start_id, end_id)
+        
+        # Track slide URLs from different sources
+        preview_slide_url = None
+        summary_slide_url = None
+        
+        if stored_context:
+            logger.info(f"Found stored lecture context for thread {thread_id}")
+            
+            # Fetch preview messages by ID range
+            preview_start = stored_context.get("preview_msg_start_id")
+            preview_end = stored_context.get("preview_msg_end_id")
+            
+            if preview_start and preview_end:
+                exclude_ranges.append((int(preview_start), int(preview_end)))
+                preview_slide_url = stored_context.get("slide_url")  # From preview
+                try:
+                    async for msg in channel.history(
+                        after=discord.Object(id=int(preview_start) - 1),
+                        before=discord.Object(id=int(preview_end) + 1),
+                        oldest_first=True,
+                    ):
+                        if msg.author.bot:
+                            context.bot_text.append(msg.content)
+                except Exception as e:
+                    logger.warning(f"Failed to fetch preview messages: {e}")
+            
+            # Fetch summary messages by ID range
+            summary_start = stored_context.get("summary_msg_start_id")
+            summary_end = stored_context.get("summary_msg_end_id")
+            
+            if summary_start and summary_end:
+                exclude_ranges.append((int(summary_start), int(summary_end)))
+                # Summary may have its own slide URL (from meeting recording)
+                if stored_context.get("slide_url"):
+                    summary_slide_url = stored_context.get("slide_url")
+                try:
+                    async for msg in channel.history(
+                        after=discord.Object(id=int(summary_start) - 1),
+                        before=discord.Object(id=int(summary_end) + 1),
+                        oldest_first=True,
+                    ):
+                        if msg.author.bot:
+                            context.bot_text.append(msg.content)
+                except Exception as e:
+                    logger.warning(f"Failed to fetch summary messages: {e}")
+            
+            # Prioritize slide URL: summary > preview
+            context.slide_url = summary_slide_url or preview_slide_url
+        
+        # Determine chat history limit
+        # If no stored context, use 200 for better context coverage
+        chat_limit = limit if stored_context else 200
+        
+        # Fetch recent chat history (excluding preview/summary ranges)
+        async for msg in channel.history(limit=chat_limit):
+            msg_id = msg.id
+            
+            # Skip if in excluded ranges
+            is_excluded = any(start <= msg_id <= end for start, end in exclude_ranges)
+            if is_excluded:
+                continue
+            
             if msg.author.bot:
-                context.bot_text.append(msg.content)
-                
-                # Find PDF attachment (first one only)
-                if not context.pdf_attachment:
-                    for att in msg.attachments:
-                        if att.filename.endswith('.pdf'):
-                            context.pdf_attachment = att.url
-                            break
+                # Only add if we don't have stored context (avoid duplicates)
+                if not stored_context:
+                    context.bot_text.append(msg.content)
+                    
+                    # Find PDF attachment (first one only)
+                    if not context.pdf_attachment:
+                        for att in msg.attachments:
+                            if att.filename.endswith('.pdf'):
+                                context.pdf_attachment = att.url
+                                break
             else:
-                # User message
+                # User message - always include recent discussions
                 context.user_messages.append({
                     "author": msg.author.display_name,
                     "content": msg.content,
@@ -192,8 +268,9 @@ class AskCog(commands.Cog):
                         except Exception as e:
                             logger.warning(f"Failed to save image: {e}")
         
-        # Extract slide URL (most recent, not in References)
-        context.slide_url = self._extract_slide_url(context.bot_text)
+        # Fallback: Extract slide URL from bot messages if not stored
+        if not context.slide_url:
+            context.slide_url = self._extract_slide_url(context.bot_text)
         
         return context
     
@@ -442,18 +519,21 @@ class AskCog(commands.Cog):
             for placeholder, img_path in latex_images:
                 latex_lookup[placeholder] = img_path
         
-        # Pre-download Google Search images
+        # Pre-download Google Search images with validation
         search_pattern = r'\[-Google Search:\s*"([^"]+)"-\]'
-        search_images = {}  # keyword -> bytes
+        search_images = {}  # keyword -> (bytes, description)
         for match in re.finditer(search_pattern, text):
             keyword = match.group(1)
             if keyword not in search_images:
                 try:
-                    img_bytes = await image_search.search_and_download(keyword)
-                    search_images[keyword] = img_bytes
+                    # Pass question as context for better validation
+                    img_bytes, description = await image_search.search_and_download(
+                        keyword, context=question
+                    )
+                    search_images[keyword] = (img_bytes, description)
                 except Exception as e:
                     logger.warning(f"Image search failed for '{keyword}': {e}")
-                    search_images[keyword] = None
+                    search_images[keyword] = (None, None)
         
         # Parse text into parts: (text_chunk, marker_type, marker_data)
         # marker_type: 'page', 'chat_img', 'search', 'latex' or None
@@ -566,10 +646,14 @@ class AskCog(commands.Cog):
                 
                 elif marker_type == "search":
                     keyword = marker_data
-                    img_bytes = search_images.get(keyword)
-                    if img_bytes:
-                        file = discord.File(io.BytesIO(img_bytes), filename="search.png")
-                        await channel.send(file=file)
+                    img_data = search_images.get(keyword)
+                    if img_data:
+                        img_bytes, description = img_data
+                        if img_bytes:
+                            file = discord.File(io.BytesIO(img_bytes), filename="search.png")
+                            # Include description if available
+                            caption = f"🔍 *{description}*" if description else None
+                            await channel.send(content=caption, file=file)
                 
                 elif marker_type == "latex":
                     placeholder = marker_data

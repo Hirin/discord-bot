@@ -506,7 +506,7 @@ BẢN TÓM TẮT CẦN XỬ LÝ:
 # ============================================================================
 
 ASK_PROMPT = """⚠️ QUY TẮC BẮT BUỘC:
-1. Khi tham chiếu slide, đặt marker [-PAGE:X-] NGAY SAU phần giải thích liên quan
+1. Khi tham chiếu slide, đặt marker [-PAGE:X-] NGAY SAU phần giải thích liên quan 
 2. Khi cần hình minh họa từ internet, dùng: [-Google Search: "từ khóa tiếng Anh"-]
 3. Trả lời bằng tiếng Việt, rõ ràng, chi tiết
 4. Công thức quan trọng viết giữa $$ formular $$ để render rõ ràng

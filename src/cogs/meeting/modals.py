@@ -428,6 +428,25 @@ class MeetingIdModal(discord.ui.Modal, title="Meeting Summary"):
                         view._message = feedback_msg
                     except Exception as e:
                         logger.warning(f"Failed to send feedback view: {e}")
+                    
+                    # Save lecture context for !ask
+                    try:
+                        from services import lecture_context_storage
+                        
+                        channel = interaction.channel
+                        parent_channel = getattr(channel, 'parent', channel)
+                        
+                        lecture_context_storage.save_lecture_context(
+                            channel_id=parent_channel.id if parent_channel else channel.id,
+                            channel_name=parent_channel.name if parent_channel else channel.name,
+                            thread_id=channel.id,
+                            thread_name=channel.name,
+                            slide_url=pdf_path if pdf_path else None,
+                            summary_msg_start_id=min(msg_ids),
+                            summary_msg_end_id=max(msg_ids),
+                        )
+                    except Exception as e:
+                        logger.warning(f"Failed to save lecture context: {e}")
                 
                 # Log success to tracking channel
                 from services import discord_logger

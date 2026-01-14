@@ -113,20 +113,62 @@ async def download_first_valid(
     return None, None
 
 
-async def search_and_download(query: str, max_tries: int = 5) -> Optional[bytes]:
+async def search_and_download(
+    query: str, 
+    max_tries: int = 10,
+    validate: bool = True,
+    context: str = None,
+    api_key: str = None,
+) -> tuple[Optional[bytes], Optional[str]]:
     """
-    Search Google Images and download first valid result.
+    Search Google Images, validate with Gemini 2.5 Flash, and download first valid result.
     
     Args:
         query: Search query
-        max_tries: Max download attempts
+        max_tries: Max download attempts (default 10 for better selection)
+        validate: Whether to validate with Gemini Flash
+        context: Additional context about the topic (helps with abbreviations)
+        api_key: Optional Gemini API key for validation
         
     Returns:
-        Image bytes or None
+        Tuple of (image_bytes, description) or (None, None)
     """
-    urls = await search_images_google(query)
+    urls = await search_images_google(query, num_results=max_tries)
     if not urls:
-        return None
+        return None, None
     
-    data, _ = await download_first_valid(urls, max_tries)
-    return data
+    async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
+        for url in urls[:max_tries]:
+            try:
+                resp = await client.get(url, headers={
+                    "User-Agent": HEADERS["User-Agent"],
+                    "Accept": "image/*,*/*;q=0.8",
+                })
+                
+                content_type = resp.headers.get("content-type", "")
+                
+                if resp.status_code == 200 and "image" in content_type:
+                    if len(resp.content) >= 5000:  # Min size
+                        image_bytes = resp.content
+                        
+                        if validate:
+                            from services import gemini
+                            is_relevant, description = await gemini.validate_image_relevance(
+                                image_bytes, query, context=context, api_key=api_key
+                            )
+                            if is_relevant:
+                                logger.info(f"Validated image: {len(image_bytes)} bytes")
+                                return image_bytes, description
+                            else:
+                                logger.info("Image not relevant, trying next...")
+                                continue
+                        else:
+                            return image_bytes, None
+                            
+            except Exception as e:
+                logger.debug(f"Failed to download {url[:50]}: {e}")
+                continue
+    
+    logger.warning(f"No relevant images found for '{query[:30]}'")
+    return None, None
+

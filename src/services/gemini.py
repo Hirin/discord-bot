@@ -761,3 +761,76 @@ async def match_slides_to_summary(
     
     return await asyncio.to_thread(_call_gemini)
 
+
+async def validate_image_relevance(
+    image_bytes: bytes,
+    keyword: str,
+    context: str = None,
+    api_key: str = None,
+) -> tuple[bool, Optional[str]]:
+    """
+    Use Gemini 2.5 Flash to validate if image is relevant and get description.
+    
+    Args:
+        image_bytes: Image data
+        keyword: Search keyword to validate against
+        context: Additional context about the topic (helps with abbreviations)
+        api_key: Optional Gemini API key
+        
+    Returns:
+        Tuple of (is_relevant, description) or (False, None)
+    """
+    from google import genai
+    from google.genai import types
+    
+    def _validate():
+        try:
+            # Use provided key or fallback to env
+            key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+            if not key:
+                logger.warning("No Gemini API key for image validation")
+                return True, None  # Skip validation if no key
+            
+            client = genai.Client(api_key=key)
+            
+            # Create image part
+            image_part = types.Part.from_bytes(data=image_bytes, mime_type="image/png")
+            
+            # Build context-aware prompt
+            context_str = f"\n\nContext về topic: {context}" if context else ""
+            
+            prompt = f"""Analyze this image:
+1. Is this image relevant to the topic "{keyword}"?{context_str}
+   Answer YES or NO.
+2. If YES, provide a brief Vietnamese description (1-2 sentences) of what the image shows.
+
+Format your response EXACTLY as:
+RELEVANT: YES/NO
+DESCRIPTION: [your description in Vietnamese, or "N/A" if not relevant]"""
+
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=[image_part, prompt],
+            )
+            
+            result_text = response.text.strip()
+            
+            # Parse response
+            is_relevant = "RELEVANT: YES" in result_text.upper()
+            
+            description = None
+            if is_relevant and "DESCRIPTION:" in result_text:
+                desc_match = result_text.split("DESCRIPTION:", 1)
+                if len(desc_match) > 1:
+                    description = desc_match[1].strip()
+                    if description.upper() == "N/A":
+                        description = None
+            
+            logger.info(f"Image validation for '{keyword[:30]}': relevant={is_relevant}")
+            return is_relevant, description
+            
+        except Exception as e:
+            logger.warning(f"Image validation failed: {e}")
+            return True, None  # Default to accepting if validation fails
+    
+    return await asyncio.to_thread(_validate)

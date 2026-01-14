@@ -416,7 +416,36 @@ class PreviewProcessor:
             self.cleanup()
             
             # ==================================
-            # STAGE 5: Send Feedback View
+            # STAGE 5: Save lecture context for !ask
+            # ==================================
+            if msg_ids:
+                try:
+                    from services import lecture_context_storage
+                    
+                    channel = self.interaction.channel
+                    parent_channel = getattr(channel, 'parent', channel)
+                    
+                    # Get first slide URL from documents
+                    slide_url = None
+                    for doc in self.documents:
+                        if doc.source == "drive":
+                            slide_url = doc.original_path
+                            break
+                    
+                    lecture_context_storage.save_lecture_context(
+                        channel_id=parent_channel.id if parent_channel else channel.id,
+                        channel_name=parent_channel.name if parent_channel else channel.name,
+                        thread_id=channel.id,
+                        thread_name=channel.name,
+                        slide_url=slide_url,
+                        preview_msg_start_id=min(msg_ids),
+                        preview_msg_end_id=max(msg_ids),
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to save lecture context: {e}")
+            
+            # ==================================
+            # STAGE 6: Send Feedback View
             # ==================================
             if msg_ids:
                 try:
