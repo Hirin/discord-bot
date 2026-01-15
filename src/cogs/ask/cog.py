@@ -71,7 +71,30 @@ class AskRetryView(discord.ui.View):
             self.context,  # Reuse context
         )
     
-    @discord.ui.button(label="❌ Đóng", style=discord.ButtonStyle.secondary)
+    @discord.ui.button(label="🔑 Đổi Key & Thử lại", style=discord.ButtonStyle.secondary)
+    async def change_key_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Force rotate to next API key and retry"""
+        self.retried = True
+        await interaction.response.defer()
+        
+        # Mark current key as rate limited to force rotation
+        from services import gemini_keys
+        user_id = interaction.user.id
+        pool = gemini_keys.get_pool(user_id)
+        if pool and pool.keys:
+            current_key = pool.get_next_key()
+            if current_key:
+                pool.mark_rate_limited(current_key)
+                logger.info(f"Forced key rotation for user {user_id}")
+        
+        await self.cog._process_ask(
+            interaction, 
+            self.question, 
+            self.question_image,
+            self.context,
+        )
+    
+    @discord.ui.button(label="❌ Đóng", style=discord.ButtonStyle.danger)
     async def close_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
         await interaction.delete_original_response()
